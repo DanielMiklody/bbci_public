@@ -9,15 +9,21 @@ function [data, bbci]= bbci_apply(bbci)
 
 % 02-2011 Benjamin Blankertz
 
-
+scaling=10^5;%2*10^6;
+lib = lsl_loadlib();
 bbci= bbci_apply_setDefaults(bbci);
 [data, bbci]= bbci_apply_initData(bbci);
-
+info = lsl_streaminfo(lib,'BBCI_Ch1','Markers',1,0,'cf_float32','BBCIonlinetoolbox');
+outletCh1 = lsl_outlet(info);
 run= true;
 while run,
   for k= 1:length(bbci.source),
     [data.source(k), data.marker]= ...
         bbci_apply_acquireData(data.source(k), bbci.source(k), data.marker);
+    if (max(abs(data.source(k).x(:,25)))/scaling)>1
+        scaling=max(abs(data.source(k).x(:,25)));
+    end
+    outletCh1.push_sample(data.source(k).x(:,25)/scaling);
   end
   if ~all(cellfun(@(x)getfield(x,'running'), {data.source(:).state})),
     break;
@@ -57,6 +63,7 @@ while run,
             bbci_apply_evalClassifier(fv, bbci.classifier(cfy));
       end
       cfy_out= cat(1, data.classifier(cfy_list).x);
+      cfy_out=2*(1./(1+exp(cfy_out))-0.5);
       data.control(ic)= ...
           bbci_apply_evalControl(cfy_out, data.control(ic), ...
                                  bbci.control(ic), data.event, data.marker);

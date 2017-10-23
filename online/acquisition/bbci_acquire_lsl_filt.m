@@ -26,6 +26,7 @@ function varargout= bbci_acquire_lsl(varargin)
 %  MRKDESC - CELL {1 nMarkers} descriptors like 'S 52'
 
 % 11-2015 Jan Boelts
+% 06-2017 Daniel Miklody
 % --- --- --- ---
 
 global BTB
@@ -77,6 +78,7 @@ if isequal(varargin{1}, 'init'),
     state.nBytesPerPacket= 2+3*state.nChans+4;
     nPacketsPerPoll= ceil(state.blocksize/1000*state.fs);
     state.nBytesPerPoll= nPacketsPerPoll*state.nBytesPerPacket;
+    state.filterstate=[];
     
     %%%%%  resolve eeg stream from LSL %%%%%
     eeg = {};
@@ -181,7 +183,7 @@ else % this is the running condition that receives and returns the samples
     
     % Apply filter if requested (dfilt.filter automatically saves the state)
     if ~isempty(state.filtHd),
-        cntx= filter(state.filtHd, cntx, 1);
+        [cntx,state.filterstate]= online_filt(cntx,state.filterstate,state.filt.b, state.filt.a);
     end
     
     output = {cntx, mrkTime, mrkDesc, state};

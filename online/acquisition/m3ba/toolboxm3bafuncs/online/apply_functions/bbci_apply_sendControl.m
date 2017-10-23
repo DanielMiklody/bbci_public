@@ -34,8 +34,11 @@ if isequal(control_signal, 'init'),
             send_tobi_c_udp('init', bbci_feedback.host, bbci_feedback.port);
         case 'lsl',
             lib = lsl_loadlib();
-            info = lsl_streaminfo(lib,'BBCI','BCI',1,100,'cf_float32','sdfwerr32432');
-            data_feedback.opt.outlet = lsl_outlet(info);
+%             info = lsl_streaminfo(lib,'BBCI','BCI',1,100,'cf_float32','BBCIonlinetoolbox');
+            info = lsl_streaminfo(lib,'BBCIcfout1','Markers',1,0,'cf_float32','BBCIonlinetoolbox');
+            data_feedback.opt.outlet1 = lsl_outlet(info);
+%             info = lsl_streaminfo(lib,'BBCIcfout2','Markers',1,0,'cf_float32','BBCIonlinetoolbox');
+%             data_feedback.opt.outlet2 = lsl_outlet(info);
         case 'matlab',
             if isfield(bbci_feedback, 'opt'),
                 data_feedback.opt= bbci_feedback.opt;
@@ -68,6 +71,9 @@ if isequal(control_signal, 'close'),
 end
 
 %% - Operation
+if any(strcmp(bbci_feedback.receiver,{'udp','pyff'}))&& isnumeric(control.packet) && ~isempty(control.packet),
+  control.packet= {'cl_output', control.packet};
+end
 switch(bbci_feedback.receiver),
     case '',
         % do nothing
@@ -82,14 +88,16 @@ switch(bbci_feedback.receiver),
         end
     case 'tobi_c',
         if ~isempty(control_signal),
-            send_tobi_c_udp('send', control_signal{2}(1));
+            send_tobi_c_udp('send', control_signal);
         end
     case 'lsl',
         if ~isempty(control_signal),
-            data_feedback.opt.outlet.push_sample(control_signal{2}(1));
+            data_feedback.opt.outlet1.push_sample(control_signal(2)/1.5);
+%             data_feedback.opt.outlet2.push_sample(control_signal(2));
         end
     case 'matlab',
-        idx= find(cellfun(@(x)isequal(x,'cl_output'), control_signal));
-        cls_output= control_signal{idx(end)+1};
+%         idx= find(cellfun(@(x)isequal(x,'cl_output'), control_signal));
+%         cls_output= control_signal{idx(end)+1};
+        cls_output=control_signal
         data_feedback= bbci_feedback.fcn(cls_output, data_feedback);
 end

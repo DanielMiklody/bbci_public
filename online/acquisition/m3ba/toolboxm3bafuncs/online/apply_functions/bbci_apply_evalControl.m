@@ -49,6 +49,4 @@ else
   end
 end
 
-if isnumeric(control.packet) && ~isempty(control.packet),
-  control.packet= {'cl_output', control.packet};
-end
+

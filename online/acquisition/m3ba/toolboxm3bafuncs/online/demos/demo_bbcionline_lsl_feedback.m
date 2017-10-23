@@ -7,12 +7,9 @@
 %  a very simple processing chain with a random clasifiers.
 
 
-% clab= {'letft' 'right'};
-clab = {'AF5' 'AF3' 'AF1' 'AFz' 'AF2' 'AF4' 'AF6' ...
-        'F5' 'F3', 'F1' 'Fz' 'F2' 'F4' 'F6' ...
-        'FC7' 'FC5'};
+clab= {'C3','Cz','C4', 'CP3','CPz','CP4'};
 C= struct('b', 0);
-C.w= randn(length(clab), 2)/2000;
+C.w= randn(length(clab), 1);
 
 bbci= struct;
 bbci.source.min_blocklength_sa=1;

@@ -67,6 +67,7 @@ if isequal(varargin{1}, 'init'),
   if state.realtime==0,
     state.realtime= inf;
   end
+  state.start_time= tic;  
   if isfield(mrk, 'event') && isfield(mrk.event, 'desc'),
     mrk.desc= mrk.event.desc(:)';
   else
@@ -90,6 +91,13 @@ else
   elseif isstruct(varargin{1}),
     if isempty(state.cnt_idx),
       error('file is closed');
+    end
+    time_running= toc(state.start_time);
+    if time_running < state.cnt_idx(end)/state.fs/state.realtime,
+%      fprintf('waiting\n');
+      output= {[], [], [], state};
+      varargout= output(1:nargout);
+      return;
     end
     if state.cnt_idx(end) > size(state.cnt.x,1),
       state.running= 0;

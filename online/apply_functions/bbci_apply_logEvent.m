@@ -86,13 +86,17 @@ end
 
 packet= data.control(icontrol).packet;
 str= [str, '{'];
-for k= 1:length(packet)/2,
-  if k>1,
-    str= [str, ', '];
+if iscell(packet),
+  for k= 1:length(packet)/2,
+    if k>1,
+      str= [str, ', '];
+    end
+    str= [str, packet{2*k-1}, '=', util_toString(packet{2*k})];
   end
-  str= [str, packet{2*k-1}, '=', util_toString(packet{2*k})];
+  str= [str, '}\n'];
+else
+  str= util_toString(packet);
 end
-str= [str, '}\n'];
 
 for k= 1:length(data.log.fid),
   fprintf(data.log.fid(k), str);
