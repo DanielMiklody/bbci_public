@@ -18,5 +18,6 @@ if isfield(mnt, 'box'),
   idx(find(idx>length(mnt.clab)))= [];
   clab= mnt.clab(idx);
 else
+  idx=1:numel(mnt.clab);
   clab= mnt.clab;
 end
