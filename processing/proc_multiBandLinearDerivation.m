@@ -1,4 +1,3 @@
-
 function dat_sf = proc_multiBandLinearDerivation(dat,W)
 %PROC_MULTIBANDLINEARDERIVATION - Apply linear derivation to multi-band
 % data

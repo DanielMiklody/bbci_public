@@ -11,12 +11,12 @@ end
 epo = misc_history(epo);
 out= epo;
 %% scale back
-out.x= 10.^(epo.x/10);
+out.x= 10.^(epo.x/20);
 out= rmfield(out, 'yUnit');  % otherwise we will enter an infinite recursion
 
 %% average
 out= proc_average(out, varargin{:});
 
 %% re-convert to dB
-out.x= 10*log10(out.x);
+out.x= 20*log10(out.x);
 out.yUnit= 'dB';

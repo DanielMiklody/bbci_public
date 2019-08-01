@@ -1,10 +1,10 @@
 
-function [dat_sf,W] = proc_multiBandSpatialFilter(dat,method)
+function [dat_sf,W,A,score] = proc_multiBandSpatialFilter(dat,method)
 %PROC_MULTIBANDSPATIALFILTER - Apply spatial filtering method to multiple
 %frequency bands
 %
 %Synopsis:
-% [DAT_SF, W] = proc_multiBandSpatialFilter(DAT, METHOD);
+% [DAT_SF, W,A,score] = proc_multiBandSpatialFilter(DAT, METHOD);
 %
 %Arguments:
 % DAT    - data structure of epoched and pre-filtered data
@@ -48,10 +48,12 @@ n_bands = max(band_ix);
 
 % band-wise apply spatial filtering method
 W = cell(1,n_bands);
+A = cell(1,n_bands);
+score = cell(1,n_bands);
 dat_sf = [];
 for bi = 1:n_bands
     dat2 = proc_selectChannels(dat,sprintf('*flt%d',bi));
-    [dat2,W{bi}] = procFunc(dat2,procPar{:});
+    [dat2,W{bi},A{bi},score{bi}] = procFunc(dat2,procPar{:});
     dat_sf = proc_appendChannels(dat_sf,dat2);
 end
 

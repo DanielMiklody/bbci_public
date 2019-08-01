@@ -207,7 +207,7 @@ for vp= 1:K,
   if isfield(ga, 'yUnit') 
     switch ga.yUnit
       case 'dB'
-        erps{vp}.x = 10.^(erps{vp}.x/10);
+        erps{vp}.x = 10.^(erps{vp}.x/20);
       case 'r',
         erps{vp}.x = atanh(erps{vp}.x);
       case 'r^2',
@@ -302,7 +302,7 @@ end
 if isfield(ga, 'yUnit') 
   switch ga.yUnit
     case 'dB'
-      ga.x= 10*log10(ga.x);
+      ga.x= 20*log10(ga.x);
     case 'r',
       ga.x= tanh(ga.x);
     case 'r^2',

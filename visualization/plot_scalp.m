@@ -323,7 +323,7 @@ if strcmp(opt.ScalePos, 'none'),
   H.cb= [];
 else
   H.cb= colorbar(opt.ScalePos);
-  if opt.TicksAtContourLevels && opt.Contour,
+  if opt.TicksAtContourLevels && sum(opt.Contour),
     if strcmpi(opt.ScalePos, 'vert'),
       set(H.cb, 'yLim',H.CLim, 'yTick', ctick);
       if opt.ShrinkColorbar>0,
