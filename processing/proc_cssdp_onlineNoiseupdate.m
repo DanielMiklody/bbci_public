@@ -43,7 +43,7 @@ function [dat2, varargout]= proc_cssdp_onlineNoiseupdate(dat, W,score, varargin)
 
 props= {'CovFcn'      {@cov}                            '!FUNC|CELL'
         'ScoreFcn'    {@score_eigenvalues}              '!FUNC|CELL'
-        'lambda'      0.01                              'DOUBLE'
+        'lambda'      0.001                              'DOUBLE'
         'Verbose'     1                                 'INT'
        };
 

@@ -47,6 +47,7 @@ props= {'CovFcn'      {@cov}                            '!FUNC|CELL'
         'Verbose'     1                                 'INT'
         'filterOrder'   3                               'INT'
         'ival'  []                               'DOUBLE[- -2]'
+        'lambda'      0.001                              'DOUBLE'
        };
 
 if nargin==0,
