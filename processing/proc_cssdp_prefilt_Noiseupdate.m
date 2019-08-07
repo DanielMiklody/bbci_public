@@ -1,4 +1,4 @@
-function [dat2, varargout]= proc_cssdp_prefilt(dat, varargin)
+function [dat2, varargout]= proc_cssdp_prefilt_Noiseupdate(dat, varargin)
 %PROC_CSSDP - Common Spatio-Frequency Decomposition Pattern (CSP) Analysis
 %
 %Synopsis:
@@ -45,9 +45,9 @@ props= {'CovFcn'      {@cov}                            '!FUNC|CELL'
         'ScoreFcn'    {@score_eigenvalues}              '!FUNC|CELL'
         'SelectFcn'   {@cspselect_equalPerClass, 3}     '!FUNC|CELL'
         'Verbose'     1                                 'INT'
-        'filterOrder'   3                               'INT'
-        'ival'  []                               'DOUBLE[- -2]'
-        'lambda'      0.001                              'DOUBLE'
+        'filterOrder' 3                                 'INT'
+        'ival'        []                                'DOUBLE[- -2]'
+        'lambda'      0.001                             'DOUBLE'
        };
 
 if nargin==0,
