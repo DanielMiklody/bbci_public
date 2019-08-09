@@ -1,4 +1,4 @@
-function idx= cssdpselect_greater(score, ~, value)
+function idx= cssdpselect_greater(score, ~, value,varargin)
 %CSSDPSELECT_LARGER1 - Select components with an absolute eigenvalue
 %greater than 1
 %
@@ -14,6 +14,15 @@ function idx= cssdpselect_greater(score, ~, value)
 %
 %See also processing/proc_csp
 
+if nargin>3
+    N_min=varargin{1};
+else
+    N_min=0;
+end
 
-idx= abs(score)>value;
-fprintf('%i compponents selected\n',sum(idx))
+idx= find(abs(score)>value);
+if numel(idx)<N_min
+    idx2=cspselect_equalPerClass(score,0,N_min);
+    idx=unique([idx; idx2]);
+end
+fprintf('%i compponents selected\n',numel(idx))
