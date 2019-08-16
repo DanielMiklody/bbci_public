@@ -90,6 +90,15 @@ score= scoreFcn(dat, W, D, scorePar{:});
 
 % Select desired CSSDP filters
 [selectFcn, selectPar]= misc_getFuncParam(opt.SelectFcn);
+if numel(selectPar{1})>1
+    if chanind(dat,'*flt1*')
+        selectPar{1}=selectPar{1}(1);
+    elseif chanind(dat,'*flt2*')
+        selectPar{1}=selectPar{1}(2);
+    elseif chanind(dat,'*flt3*')
+        selectPar{1}=selectPar{1}(3);
+    end
+end
 idx= selectFcn(score, W, selectPar{:});
 W= W(:,idx);
 score= score(idx);
