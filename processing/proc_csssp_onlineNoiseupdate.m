@@ -1,4 +1,4 @@
-function [dat, varargout]= proc_cssdp_prefilt(dat, varargin)
+function [dat2, varargout]= proc_csssp_onlineNoiseupdate(dat, W,score,C, varargin)
 %PROC_CSSDP - Common Spatio-Frequency Decomposition Pattern (CSP) Analysis
 %
 %Synopsis:
@@ -43,10 +43,9 @@ function [dat, varargout]= proc_cssdp_prefilt(dat, varargin)
 
 props= {'CovFcn'      {@cov}                            '!FUNC|CELL'
         'ScoreFcn'    {@score_eigenvalues}              '!FUNC|CELL'
-        'SelectFcn'   {@cspselect_equalPerClass, 3}     '!FUNC|CELL'
+        'lambda'      0.001                              'DOUBLE'
+        'alpha'       1                             'DOUBLE'
         'Verbose'     1                                 'INT'
-        'filterOrder'   3                               'INT'
-        'ival'  []                               'DOUBLE[- -2]'
        };
 
 if nargin==0,
@@ -60,59 +59,50 @@ opt= opt_setDefaults(opt, props);
 opt_checkProplist(opt, props);
 dat= misc_history(dat);
 
-
-
 % Calculate classwise covariance matrices
 [covFcn, covPar]= misc_getFuncParam(opt.CovFcn);
 
 epo_noise=proc_selectChannels(dat,'*noise*');
 dat=proc_selectChannels(dat,'not','*noise*');
-nChans= size(dat.x, 2);
-C= zeros(nChans, nChans, 2);
-for k= 1:2,
-  X= permute(dat.x(:,:,dat.y(k,:)==1), [1 3 2]);
-  X= reshape(X, [], nChans);
-  C(:,:,k)= covFcn(X, covPar{:});
+nChans= size(W, 2);
+nEpo= size(epo_noise.x, 3);
+dat2= proc_linearDerivation(dat, W, 'prependix','cssdp');
+D=diag(score);
+
+for ii=1:nEpo
+    X_n=epo_noise.x(:,:,ii);
+    C_temp= covFcn(dat.x(:,:,ii), covPar{:});
+    C=(1-opt.lambda)*C+opt.lambda*C_temp;
+    [~,D_k]=eig(C_temp-C);
+    C_k=abs((C_temp-C)*sign(D_k));
+    C_n= (1-opt.lambda)*eye(nChans)+opt.lambda*W'*(covFcn(X_n, covPar{:})+opt.alpha*C_k)*W;
+    % ORIGINAL CODE FOR COMPUTING CSSDP IN CHANNEL SPACE
+    [V, D]= eig( D, C_n );
+    %resort (eig mixes them up) THIS IS RATHER A HOTFIX
+    [~,imax]=max(abs(V));
+    [~,inds]=sort(imax);
+    V=V(:,inds).*repmat(sign(diag(V(:,inds))),1,nChans)';
+    D=diag(diag(D(inds,inds)));
+    W=W*V;
+    dat2.x(:,:,ii)=dat.x(:,:,ii)*W;
 end
-
-X= permute(epo_noise.x, [1 3 2]);
-X= reshape(X, [], nChans);
-C_n= covFcn(X, covPar{:});
-
-% ORIGINAL CODE FOR COMPUTING CSSDP IN CHANNEL SPACE
-% % Do actual CSSDP computation as generalized eigenvalue decomposition
-[W, D]= eig( C(:,:,1)-C(:,:,2), C_n );
 
 % Calculate score for each CSP channel
-[scoreFcn, scorePar]= misc_getFuncParam(opt.ScoreFcn);
-score= scoreFcn(dat, W, D, scorePar{:});
-
-% Select desired CSSDP filters
-[selectFcn, selectPar]= misc_getFuncParam(opt.SelectFcn);
-if numel(selectPar{1})>1
-    if chanind(dat,'*flt1*')
-        selectPar{1}=selectPar{1}(1);
-    elseif chanind(dat,'*flt2*')
-        selectPar{1}=selectPar{1}(2);
-    elseif chanind(dat,'*flt3*')
-        selectPar{1}=selectPar{1}(3);
-    end
-end
-idx= selectFcn(score, W, selectPar{:});
-W= W(:,idx);
-score= score(idx);
+% [scoreFcn, scorePar]= misc_getFuncParam(opt.ScoreFcn);
+% score= scoreFcn(dat2, W, D, scorePar{:});
+    
 
 % Save old channel labels
-if isfield(dat, 'clab'),
-  dat.origClab= dat.clab;
+if isfield(dat2, 'clab'),
+  dat2.origClab= dat2.clab;
 end
 
 % Apply CSP filters to time series
-dat= proc_linearDerivation(dat, W, 'prependix','cssdp');
+% dat= proc_linearDerivation(dat, W, 'prependix','cssdp');
 
 % Determine patterns according to [Haufe et al, Neuroimage, 87:96-110, 2014]
 % http://dx.doi.org/10.1016/j.neuroimage.2013.10.067
-C_avg = mean(C,3);
-A= C_avg * W / (W'*C_avg*W);
+% C_avg = mean(C,3);
+% A= C_avg * W / (W'*C_avg*W);
 
-varargout= {W, A, score};
+varargout= {W , C};

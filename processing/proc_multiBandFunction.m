@@ -33,11 +33,18 @@ end
 if misc_isproplist(varargin{1}),
     opt= opt_proplistToStruct(varargin{:});
 else
-    if iscell(varargin{2})
-        if iscell(varargin{3})
-            opt= opt_proplistToStruct(varargin{4:end});
-            opt.arg = varargin{2};
-            opt.arg2 = varargin{3};
+    if nargin>2&&iscell(varargin{2})
+        if nargin>3&&iscell(varargin{3})
+            if nargin>4&&iscell(varargin{4})
+                opt= opt_proplistToStruct(varargin{5:end});
+                opt.arg = varargin{2};
+                opt.arg2 = varargin{3};
+                opt.arg3 = varargin{4};
+            else
+                opt= opt_proplistToStruct(varargin{4:end});
+                opt.arg = varargin{2};
+                opt.arg2 = varargin{3};
+            end
         else
             opt= opt_proplistToStruct(varargin{3:end});
             opt.arg = varargin{2};
@@ -68,7 +75,11 @@ for bi = 1:n_bands
     dat2 = proc_selectChannels(dat,sprintf('*flt%d',bi));
     if isfield(opt,'arg')
         if isfield(opt,'arg2')
-            dat2 = Fcn(dat2, opt.arg{bi},opt.arg2{bi}, Par{:});
+            if isfield(opt,'arg3')
+                dat2 = Fcn(dat2, opt.arg{bi},opt.arg2{bi},opt.arg3{bi}, Par{:});
+            else
+                dat2 = Fcn(dat2, opt.arg{bi},opt.arg2{bi}, Par{:});
+            end
         else
             dat2 = Fcn(dat2, opt.arg{bi}, Par{:});
         end
