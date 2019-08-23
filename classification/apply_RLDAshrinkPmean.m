@@ -20,8 +20,7 @@ opt_checkProplist(opt, props);
 out = nan(1,size(x,2));
 
 for xi=1:size(x,2)
-pmean=mean(x(:,xi));
-C.b=(1-opt.lambda)*C.b+opt.lambda*pmean;
+C.b=(1-opt.lambda)*C.b+opt.lambda*C.w'*x(:,xi);
 out(xi)= real( C.w'*x(:,xi) + C.b );
 end
 end
