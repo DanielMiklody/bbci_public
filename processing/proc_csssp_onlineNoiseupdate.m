@@ -44,7 +44,7 @@ function [dat2, varargout]= proc_csssp_onlineNoiseupdate(dat, W,score,C, varargi
 props= {'CovFcn'      {@cov}                            '!FUNC|CELL'
         'ScoreFcn'    {@score_eigenvalues}              '!FUNC|CELL'
         'lambda'      0.001                              'DOUBLE'
-        'alpha'       1                             'DOUBLE'
+        'alpha'       0.1                             'DOUBLE'
         'Verbose'     1                                 'INT'
        };
 
@@ -66,7 +66,7 @@ epo_noise=proc_selectChannels(dat,'*noise*');
 dat=proc_selectChannels(dat,'not','*noise*');
 nChans= size(W, 2);
 nEpo= size(epo_noise.x, 3);
-dat2= proc_linearDerivation(dat, W, 'prependix','cssdp');
+dat2= proc_linearDerivation(dat, W, 'prependix','csssp');
 D=diag(score);
 
 for ii=1:nEpo

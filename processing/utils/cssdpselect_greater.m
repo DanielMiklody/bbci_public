@@ -25,4 +25,4 @@ if numel(idx)<N_min
     idx2=cspselect_fixedNumber(score,0,N_min,'absolutemax');
     idx=unique([idx; idx2]);
 end
-fprintf('%i compponents selected\n',numel(idx))
+% fprintf('%i compponents selected\n',numel(idx))
