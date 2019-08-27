@@ -1,4 +1,4 @@
-function epo= proc_subtractReferenceClass(epo, epo_ref, varargin)
+function epo= proc_divide(epo1, epo2, varargin)
 %PROC_SUBTRACTREFERENCECLASS - subtracts a reference class in epo_ref from the data in epo.
 %
 %Synopsis:

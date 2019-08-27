@@ -69,15 +69,17 @@ dat2= proc_linearDerivation(dat, W, 'prependix','cssdp');
 D=diag(score);
 for ii=1:nEpo
     X=epo_noise.x(:,:,ii);
-    C_n= (1-opt.lambda)*eye(nChans)+opt.lambda*W'*covFcn(X, covPar{:})*W;
-    % ORIGINAL CODE FOR COMPUTING CSSDP IN CHANNEL SPACE
-    [V, D]= eig( D, C_n );
-    %resort (eig mixes them up) THIS IS RATHER A HOTFIX
-    [~,imax]=max(abs(V));
-    [~,inds]=sort(imax);
-    V=V(:,inds).*repmat(sign(diag(V(:,inds))),1,nChans)';
-    D=diag(diag(D(inds,inds)));
-    W=W*V;
+    if any(var(dat.x(:,:,ii))>100)
+        C_n= (1-opt.lambda)*eye(nChans)+opt.lambda*W'*covFcn(X, covPar{:})*W;
+        % ORIGINAL CODE FOR COMPUTING CSSDP IN CHANNEL SPACE
+        [V, D]= eig( D, C_n );
+        %resort (eig mixes them up) THIS IS RATHER A HOTFIX
+        [~,imax]=max(abs(V));
+        [~,inds]=sort(imax);
+        V=V(:,inds).*repmat(sign(diag(V(:,inds))),1,nChans)';
+        D=diag(diag(D(inds,inds)));
+        W=W*V;
+    end
     dat2.x(:,:,ii)=dat.x(:,:,ii)*W;
 end
 
