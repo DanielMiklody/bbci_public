@@ -54,7 +54,11 @@ score = cell(1,n_bands);
 dat_sf = [];
 for bi = 1:n_bands
     dat2 = proc_selectChannels(dat,sprintf('*flt%d',bi));
-    [dat2,W{bi},A{bi},score{bi},Ctr{bi}] = procFunc(dat2,procPar{:});
+    if strcmp( func2str(procFunc),{'proc_csssp_prefilt'})
+        [dat2,W{bi},A{bi},score{bi},Ctr{bi}] = procFunc(dat2,procPar{:});
+    else
+        [dat2,W{bi},A{bi},score{bi}] = procFunc(dat2,procPar{:});
+    end
     dat_sf = proc_appendChannels(dat_sf,dat2);
 end
 
