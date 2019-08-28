@@ -44,6 +44,7 @@ function [dat2, varargout]= proc_csssp_onlineNoiseupdate(dat, W,score,C, varargi
 props= {'CovFcn'      {@cov}                            '!FUNC|CELL'
         'ScoreFcn'    {@score_eigenvalues}              '!FUNC|CELL'
         'lambda'      0.001                              'DOUBLE'
+        'updateStationarity' 1                           'INT'
         'alpha'       0.1                             'DOUBLE'
         'Verbose'     1                                 'INT'
        };
@@ -71,10 +72,14 @@ D=diag(score);
 
 for ii=1:nEpo
     X_n=epo_noise.x(:,:,ii);
-    C_temp= covFcn(dat.x(:,:,ii), covPar{:});
-    C=(1-opt.lambda)*C+opt.lambda*C_temp;
-    [~,D_k]=eig(C_temp-C);
-    C_k=abs((C_temp-C)*sign(D_k));
+    if opt.updateStationarity
+        C_temp= covFcn(dat.x(:,:,ii), covPar{:});    
+        C=(1-opt.lambda)*C+opt.lambda*C_temp;
+        [~,D_k]=eig(C_temp-C);
+        C_k=abs((C_temp-C)*sign(D_k));
+    else
+        C_k=eye(nChans);
+    end
     C_n= (1-opt.lambda)*eye(nChans)+opt.lambda*W'*(covFcn(X_n, covPar{:})+opt.alpha*C_k)*W;
     % ORIGINAL CODE FOR COMPUTING CSSDP IN CHANNEL SPACE
     [V, D]= eig( D, C_n );
