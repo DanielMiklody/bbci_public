@@ -78,7 +78,7 @@ for ii=1:nEpo
         [~,D_k]=eig(C_temp-C);
         C_k=abs((C_temp-C)*sign(D_k));
     else
-        C_k=eye(nChans);
+        C_k=eye(size(X_n,2));
     end
     C_n= (1-opt.lambda)*eye(nChans)+opt.lambda*W'*(covFcn(X_n, covPar{:})+opt.alpha*C_k)*W;
     % ORIGINAL CODE FOR COMPUTING CSSDP IN CHANNEL SPACE
