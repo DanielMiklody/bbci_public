@@ -119,7 +119,7 @@ C_invcov= pinv(C_cov);
 
 C.w= C_invcov*C_mean;
 C.b= -0.5*sum(C_mean.*C.w,1)' + log(opt.Prior);
-
+C.lambda=opt.lambda;
 if nClasses==2
   C.w= C.w(:,2) - C.w(:,1);
   C.b= C.b(2)-C.b(1);
