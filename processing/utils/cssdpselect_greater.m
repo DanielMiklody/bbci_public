@@ -24,6 +24,9 @@ end
 opt= opt_proplistToStruct(varargin{:});
 [opt, isdefault]= opt_setDefaults(opt, props);
 opt_checkProplist(opt, props);        
+if isdefault.altfunc
+    opt.altfunc{2}=opt.Nmin;
+end
 
 
 idx= find(abs(score)>value);
