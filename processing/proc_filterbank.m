@@ -27,9 +27,9 @@ xo= zeros([T, nCE*nFilters]);
 clab= cell(1, nChans*nFilters);
 cc= 1:nCE;
 for ii= 1:nFilters,
-  clab(cc)= strcat(dat.clab, ['_flt' int2str(ii)]);
+  clab((1:nChans)+(ii-1)*nChans)= strcat(dat.clab, ['_flt' int2str(ii)]);
   xo(:,cc)= filter(filt_b{ii}, filt_a{ii}, dat.x(:,:));
   cc= cc + nCE;
 end
-dat.x= xo;
+dat.x= reshape(xo,T,nChans*nFilters,nEpochs);
 dat.clab= clab;

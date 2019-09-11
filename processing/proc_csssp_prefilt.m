@@ -87,7 +87,11 @@ Ctr=covFcn(X, covPar{:});
 C_k=zeros(nChans,nChans,nEpo);
 for k= 1:nEpo,
   C_temp= covFcn(dat.x(:,:,k), covPar{:})-Ctr;
-  [~,D_k]=eig(C_temp);
+  try
+    [~,D_k]=eig(C_temp);
+  catch
+      D_k=ones(size(C_temp));
+  end
   C_k(:,:,k)=abs(C_temp*sign(D_k));
 end
 C_k=mean(C_k,3);

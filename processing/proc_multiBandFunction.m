@@ -36,10 +36,18 @@ else
     if nargin>2&&iscell(varargin{2})
         if nargin>3&&iscell(varargin{3})
             if nargin>4&&iscell(varargin{4})
-                opt= opt_proplistToStruct(varargin{5:end});
-                opt.arg = varargin{2};
-                opt.arg2 = varargin{3};
-                opt.arg3 = varargin{4};
+                if nargin>5&&iscell(varargin{5})
+                    opt= opt_proplistToStruct(varargin{6:end});
+                    opt.arg = varargin{2};
+                    opt.arg2 = varargin{3};
+                    opt.arg3 = varargin{4};
+                    opt.arg4 = varargin{5};
+                else
+                    opt= opt_proplistToStruct(varargin{5:end});
+                    opt.arg = varargin{2};
+                    opt.arg2 = varargin{3};
+                    opt.arg3 = varargin{4};
+                end
             else
                 opt= opt_proplistToStruct(varargin{4:end});
                 opt.arg = varargin{2};
@@ -76,15 +84,19 @@ for bi = 1:n_bands
     if isfield(opt,'arg')
         if isfield(opt,'arg2')
             if isfield(opt,'arg3')
-                dat2 = Fcn(dat2, opt.arg{bi},opt.arg2{bi},opt.arg3{bi}, Par{:});
+                if isfield(opt,'arg4')
+                    dat2 = Fcn(dat2, opt.arg{bi},opt.arg2{bi},opt.arg3{bi},opt.arg4{bi}, Par{:});
+                else
+                    dat2 = Fcn(dat2, opt.arg{bi},opt.arg2{bi},opt.arg3{bi}, Par{:});
+                end
             else
                 dat2 = Fcn(dat2, opt.arg{bi},opt.arg2{bi}, Par{:});
             end
+            else
+                dat2 = Fcn(dat2, opt.arg{bi}, Par{:});
+            end
         else
-            dat2 = Fcn(dat2, opt.arg{bi}, Par{:});
+            dat2 = Fcn(dat2, Par{:});
         end
-    else
-        dat2 = Fcn(dat2, Par{:});
+        dat_sf = proc_appendChannels(dat_sf,dat2);
     end
-    dat_sf = proc_appendChannels(dat_sf,dat2);
-end
