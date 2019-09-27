@@ -17,7 +17,7 @@ elseif isfield(mrk1,'event'),
   lost_fields= setdiff(union(fields1, fields2), intersect(fields1, fields2));
   if ~isempty(lost_fields),
     lost_list= str_vec2str(lost_fields);
-    warning('event field(s) {%s} not found in all markers: lost', lost_list{:});
+    warning('event field(s) {%s} not found in all markers: lost', lost_list(:));
   end
   mrk.event= struct;
   for Fld= intersect(fields1, fields2)',

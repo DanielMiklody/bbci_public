@@ -1,4 +1,4 @@
-function [dat]= proc_csssp_onlineNoiseupdateauto(dat, W,score,Ctr,freqs, varargin)
+function [fv]= proc_csssp_onlineNoiseupdateauto(dat, W,score,Ctr,freqs, ivals, varargin)
 %PROC_CSSDP - Common Spatio-Frequency Decomposition Pattern (CSP) Analysis
 %
 %Synopsis:
@@ -73,14 +73,27 @@ epo_noise=proc_filterbank(dat,filt_b_pb,filt_a_pb);
 
 epo_noise=proc_filterbank(epo_noise,filt_b_sb,filt_a_sb);
 
-epo_noise=proc_selectChannels(epo_noise,'*flt1_flt1*','*flt2_flt2*','*flt3_flt3*');
+epo_noise=proc_selectChannels(epo_noise,'*flt1_flt1*','*flt2_flt2*');
 
 epo_noise.clab(1:numel(origclab_v))=strcat(origclab_v,'noise_flt1');
-epo_noise.clab(numel(origclab_v)+1:end)=strcat(origclab_v,'noise_flt2');
-
+if size(freqs{1},1)>1
+    epo_noise.clab(numel(origclab_v)+1:end)=strcat(origclab_v,'noise_flt2');
+end
 dat=proc_filterbank(dat,filt_b,filt_a);
 dat=proc_appendChannels(dat,epo_noise);
+% 
+% [dat]=proc_multiBandFunction(dat,{@proc_csssp_onlineNoiseupdate,...
+%     'lambda',opt.lambda,'alpha',opt.alpha},W,score,Ctr);
 
-[dat]=proc_multiBandFunction(dat,{@proc_csssp_onlineNoiseupdate,...
-    'lambda',opt.lambda,'alpha',opt.alpha},W,score,Ctr);
+for ifreq=1:size(freqs{1},1)        
+        fv_i= proc_selectIval(proc_selectChannels(dat,sprintf('*flt%d',ifreq)), ivals(ifreq,:));
+        fv_i=proc_csssp_onlineNoiseupdate(fv_i,W{ifreq},score{ifreq},Ctr{ifreq},'lambda',opt.lambda,'alpha',opt.alpha);
+        fv_i= proc_variance(fv_i);
+        fv_i= proc_logarithm(fv_i);
+        if ifreq==1
+            fv=fv_i;
+        else
+            fv=proc_appendChannels(fv,fv_i);
+        end
+    end
 

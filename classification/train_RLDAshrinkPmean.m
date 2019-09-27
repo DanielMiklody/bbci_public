@@ -110,10 +110,18 @@ for ci= 1:nClasses,
   end
 end
 opt_shrinkage= opt_substruct(opt, props_shrinkage(:,1));
-if opt.UsePcov,
-  [C_cov, C.gamma]= clsutil_shrinkage(xTr, opt_shrinkage);
+if isempty(opt_shrinkage)||opt_shrinkage.Gamma>0
+    if opt.UsePcov,
+        [C_cov, C.gamma]= clsutil_shrinkage(xTr, opt_shrinkage);
+    else
+        [C_cov, C.gamma]= clsutil_shrinkage(X, opt_shrinkage);
+    end
 else
-  [C_cov, C.gamma]= clsutil_shrinkage(X, opt_shrinkage);
+    if opt.UsePcov,
+        C_cov=cov(xTr');
+    else
+        C_cov=cov(X');
+    end
 end
 C_invcov= pinv(C_cov);
 

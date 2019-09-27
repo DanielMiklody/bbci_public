@@ -1,5 +1,5 @@
 function dat_sf = proc_multiBandFunction(dat,varargin)
-%PROC_MULTIBANDLINEARDERIVATION - Apply linear derivation to multi-band
+%PROC_MULTIBANDFUNCTION - Apply function to multi-band
 % data
 %
 %Synopsis:

@@ -1,4 +1,4 @@
-function [dat, varargout]= proc_cspAutoFreq(dat, varargin)
+function [dat, varargout]= proc_cspAutoFreq(dat, freqs, varargin)
 %PROC_CSPAUTO - Common Spatial Pattern Analysis with Auto Filter Selection
 %
 %Synopsis:
@@ -71,24 +71,56 @@ opt_checkProplist(opt, props);
 [T, nChans, nEpochs]= size(dat.x);
 
 if size(dat.y,1)~=2,
-  error('this function works only for 2-class data.');
+    error('this function works only for 2-class data.');
 end
-dat_lap=proc_laplacian(dat);
-band1= select_bandnarrow_epo(dat_lap, 'band',[5 7],...
-    'bandTopscore',[5 7],'areas',{});
-band2= select_bandnarrow_epo(dat_lap, 'band',[7.5 14],...
-    'bandTopscore',[7.5 14],'areas',{});
-if band1(1)==band1(2)
-    band1=[5 7];
-end
-if band2(1)==band2(2)
-    band2=[7.5 14];
-end
-freqs=[band1;band2];
-[filt_b, filt_a] = butters(4,freqs/dat.fs*2);
+clab_load=dat.clab;
 
+dat_lap=proc_laplacian(dat);
+
+%% first apply a broad-band filt before using the heuristic
+[filt_b, filt_a]= butter(5, [min(freqs(:,1)) max(freqs(:,2))]/dat.fs*2);
+dat_flt= proc_filt(dat_lap, filt_b, filt_a);
+
+%% select best time interval on broad band filtered data
+ival= select_timeivalEpo(dat_flt);
+% if diff(ival)<1000
+%     ival= [mean(ival)-500 mean(ival)+500];
+% end           
+dat_lap=proc_selectIval(dat_lap,ival);
+
+band1= select_bandnarrow_epo(dat_lap, 'band',freqs(1,:),...
+    'bandTopscore',freqs(1,:),'areas',{});
+if band1(1)==band1(2)
+    band1=freqs(1,:);
+end
+if size(freqs,1)>1
+    band2= select_bandnarrow_epo(dat_lap, 'band',freqs(2,:),...
+        'bandTopscore',freqs(2,:),'areas',{});
+    if band2(1)==band2(2)
+        band2=freqs(1,:);
+    end
+    freqs=[band1;band2];
+%     fprintf('freqs %f %f and %f %f selected\n',freqs(1,1),freqs(1,2),freqs(2,1),freqs(2,2))
+else
+    freqs=band1;
+%     fprintf('freqs %f %f selected\n',freqs(1,1),freqs(1,2))
+end
+
+[filt_b, filt_a] = butters(4,freqs/dat.fs*2);
 dat=proc_filterbank(dat,filt_b,filt_a);
 
+ivals=nan(size(freqs,1),2);
+for iFreq=1:size(freqs,1)
+    dat_tmp=proc_selectChannels(dat,sprintf('*flt%i*',iFreq));
+    dat_tmp.clab=clab_load;
+    ival= select_timeivalEpo(dat_tmp);
+%     if diff(ival)<1000
+%         ival= [mean(ival)-500 mean(ival)+500];        
+%     end
+    ivals(iFreq,:)=ival;
+end
+ival=[min(ivals(:,1)) max(ivals(:,2))];
+dat=proc_selectIval(dat,ival);
 [dat, W, A, score]=proc_multiBandSpatialFilter(dat,...
     {@proc_cspAuto,opt});
-varargout={W,A,score,filt_b, filt_a};   
+varargout={W,A,score,filt_b, filt_a, ival};

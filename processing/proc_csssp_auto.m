@@ -1,4 +1,4 @@
-function [dat, varargout]= proc_csssp_auto(dat,bands, varargin)
+function [fv, varargout]= proc_csssp_auto(dat,bands, varargin)
 %PROC_CSSDP - Common Spatio-Frequency Decomposition Pattern (CSP) Analysis
 %
 %Synopsis:
@@ -66,40 +66,89 @@ dat= misc_history(dat);
 % Calculate classwise covariance matrices
 [covFcn, covPar]= misc_getFuncParam(opt.CovFcn);
 
-%% Do banpassfiltering
+
 dat_lap=proc_laplacian(dat);
+
+%% first apply a broad-band filt before using the heuristic
+[filt_b, filt_a]= butter(5, [min(bands(:,1)) max(bands(:,2))]/dat.fs*2);
+dat_flt= proc_filt(dat_lap, filt_b, filt_a);
+
+%% select best time interval on broad band filtered data
+ival= select_timeivalEpo(dat_flt);
+% if diff(ival)<1000
+%     ival= [mean(ival)-500 mean(ival)+500];
+% end           
+dat_lap=proc_selectIval(dat_lap,ival);
+%% Do banpassfiltering
 band1= select_bandnarrow_epo(dat_lap, 'band',bands(1,:),...
     'bandTopscore',bands(1,:),'areas',{});
-band2= select_bandnarrow_epo(dat_lap, 'band',bands(2,:),...
-    'bandTopscore',bands(2,:),'areas',{});
 if band1(1)==band1(2)
     band1=bands(1,:);
 end
-if band2(1)==band2(2)
-    band2=bands(2,:);
+if size(bands,1)>1
+    band2= select_bandnarrow_epo(dat_lap, 'band',bands(2,:),...
+        'bandTopscore',bands(2,:),'areas',{});
+    if band2(1)==band2(2)
+        band2=bands(2,:);
+    end
+    freqs={[band1;band2],...
+        [band1(1)*0.75 band1(2)*1.25;band2(1)*0.75 band2(2)*1.25],...
+        [band1(1)*0.95 band1(2)*1.05;band2(1)*0.95 band2(2)*1.05]};
+else
+    freqs={[band1],...
+        [band1(1)*0.75 band1(2)*1.25],...
+        [band1(1)*0.95 band1(2)*1.05]};
 end
-freqs={[band1;band2],...
-    [band1(1)*0.75 band1(2)*1.25;band2(1)*0.75 band2(2)*1.25],...
-    [band1(1)*0.95 band1(2)*1.05;band2(1)*0.95 band2(2)*1.05]};
 [filt_b, filt_a] = butters(4,freqs{1}/dat.fs*2);
 [filt_b_pb, filt_a_pb] = butters(4,freqs{2}/dat.fs*2);
 [filt_b_sb, filt_a_sb] = butters(4,freqs{3}/dat.fs*2,'stop');
-
+%%
 origclab_v=dat.clab;
 
 epo_noise=proc_filterbank(dat,filt_b_pb,filt_a_pb);
 
 epo_noise=proc_filterbank(epo_noise,filt_b_sb,filt_a_sb);
 
-epo_noise=proc_selectChannels(epo_noise,'*flt1_flt1*','*flt2_flt2*','*flt3_flt3*');
+epo_noise=proc_selectChannels(epo_noise,'*flt1_flt1*','*flt2_flt2*');
 
 epo_noise.clab(1:numel(origclab_v))=strcat(origclab_v,'noise_flt1');
-epo_noise.clab(numel(origclab_v)+1:end)=strcat(origclab_v,'noise_flt2');
-
+if size(bands,1)>1
+    epo_noise.clab(numel(origclab_v)+1:end)=strcat(origclab_v,'noise_flt2');
+end
 dat=proc_filterbank(dat,filt_b,filt_a);
+
+ivals=nan(size(bands,1),2);
+for iFreq=1:size(bands,1)
+    dat_tmp=proc_selectChannels(dat,sprintf('*flt%i*',iFreq));
+    dat_tmp.clab=origclab_v;
+    ival= select_timeivalEpo(dat_tmp);
+%     if diff(ival)<1000
+%         ival= [mean(ival)-500 mean(ival)+500];        
+%     end
+    ivals(iFreq,:)=ival;
+end
+%fprintf('ival: %f -%f and %f - %f',ivals(1,1),ivals(1,2),ivals(2,1),ivals(2,2))
 dat=proc_appendChannels(dat,epo_noise);
 
-[dat, W, A, score,Ctr]=proc_multiBandSpatialFilter(dat,...
-    {@proc_csssp_prefilt,'SelectFcn',opt.SelectFcn,'alpha',opt.alpha});
-        
-varargout= {W, A, score, Ctr, freqs};
+% [dat, W, A, score,Ctr]=proc_multiBandSpatialFilter(dat,...
+%     {@proc_csssp_prefilt,'SelectFcn',opt.SelectFcn,'alpha',opt.alpha});
+W={};
+A={};
+score={};
+Ctr={};
+for ifreq=1:size(freqs{1},1)
+    epo= proc_selectIval(proc_selectChannels(dat,sprintf('*flt%d',ifreq)),ivals(ifreq,:));
+    [fv_i, csssp_w_i,csssp_a_i,csssp_score_i,Ctr_i]=proc_csssp_prefilt(epo,'SelectFcn',opt.SelectFcn,'alpha',opt.alpha);
+    fv_i= proc_variance(fv_i);
+    fv_i= proc_logarithm(fv_i);
+    if ifreq==1
+        fv=fv_i;
+    else
+        fv=proc_appendChannels(fv,fv_i);
+    end
+    W{end+1}=csssp_w_i;
+    A{end+1}=csssp_a_i;
+    score{end+1}=csssp_score_i;
+    Ctr{end+1}=Ctr_i;
+end
+varargout= {W, A, score, Ctr, freqs, ivals};

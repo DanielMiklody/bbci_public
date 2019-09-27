@@ -31,5 +31,6 @@ for ii= 1:nFilters,
   xo(:,cc)= filter(filt_b{ii}, filt_a{ii}, dat.x(:,:));
   cc= cc + nCE;
 end
-dat.x= reshape(xo,T,nChans*nFilters,nEpochs);
+xo= reshape(xo,T,nChans,nEpochs,nFilters);
+dat.x=reshape(permute(xo,[1 2 4 3]),T,nChans*nFilters,nEpochs);
 dat.clab= clab;
