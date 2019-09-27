@@ -88,8 +88,8 @@ elseif isempty(opt.ival)
 end
 dat_lap=proc_selectIval(dat_lap,ival);
 %% Do banpassfiltering
-freqs=[];
-for iFreq=1:size(freqs,1)
+freqs=cell(1,3);
+for iFreq=1:size(bands ,1)
 band= select_bandnarrow_epo(dat_lap, 'band',bands(iFreq,:),...
     'bandTopscore',bands(iFreq,:),'areas',{});
 if band(1)==band(2)
@@ -112,7 +112,7 @@ epo_noise=[];
 for iFreq=1:size(bands,1)
         epo_noise_tmp=proc_selectChannels(epo_noise1,sprintf('*flt%i*',iFreq));
         epo_noise_tmp.clab=strcat(origclab_v,sprintf('noise_flt%i',iFreq));
-        epo_noise_tmp=proc_filt(epo_noise,filt_b_sb{iFreq},filt_a_sb{iFreq});
+        epo_noise_tmp=proc_filt(epo_noise_tmp,filt_b_sb{iFreq},filt_a_sb{iFreq});
         epo_noise=proc_appendChannels(epo_noise,epo_noise_tmp);
 end
 clear epo_noise1 epo_noise_tmp
