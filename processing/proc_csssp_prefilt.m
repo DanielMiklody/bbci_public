@@ -123,7 +123,7 @@ if isfield(dat, 'clab'),
   dat.origClab= dat.clab;
 end
 
-% Apply CSP filters to time series
+% Apply CSSSP filters to time series
 dat= proc_linearDerivation(dat, W, 'prependix','csssp');
 
 % Determine patterns according to [Haufe et al, Neuroimage, 87:96-110, 2014]

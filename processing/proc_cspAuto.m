@@ -51,7 +51,7 @@ props= { 'patterns'     3           'INT|CHAR'
          'scaling'      'none'      'CHAR'
          'normalize'    0           'BOOL'
          'selectPolicy' 'directorscut'  'CHAR'
-         'weight'       ones(1,size(dat.y,2))   'DOUBLE'
+         'weight'       []        'DOUBLE'
          'weightExp'    1           'BOOL'};
 
 if nargin==0,
@@ -67,7 +67,9 @@ else
 end
 [opt, isdefault]= opt_setDefaults(opt, props);
 opt_checkProplist(opt, props);
-
+if isempty(opt.weight)
+    opt.weight=ones(1,size(dat.y,2)) ;
+end
 [T, nChans, nEpochs]= size(dat.x);
 
 if size(dat.y,1)~=2,

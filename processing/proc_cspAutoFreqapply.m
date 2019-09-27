@@ -1,4 +1,4 @@
-function [dat, varargout]= proc_cspAutoFreqapply(dat, freqs, varargin)
+function [fv]= proc_cspAutoFreqapply(dat,W, freqs,ivals, varargin)
 %PROC_CSPAUTO - Common Spatial Pattern Analysis with Auto Filter Selection
 %
 %Synopsis:
@@ -78,6 +78,15 @@ end
 
 dat=proc_filterbank(dat,filt_b,filt_a);
 
-[dat, W, A, score]=proc_multiBandSpatialFilter(dat,...
-    {@proc_cspAuto,opt});
-varargout={dat,W,A,score,freqs};   
+for ifreq=1:size(freqs,1)
+    epo= proc_selectIval(proc_selectChannels(dat,sprintf('*flt%d',ifreq)),ivals(ifreq,:));
+    fv_i=proc_linearDerivation(epo,W{ifreq});
+    fv_i= proc_variance(fv_i);
+    fv_i= proc_logarithm(fv_i);
+    if ifreq==1
+        fv=fv_i;
+    else
+        fv=proc_appendChannels(fv,fv_i);
+    end
+end
+

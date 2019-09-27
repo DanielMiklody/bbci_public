@@ -41,13 +41,16 @@ function [fv, varargout]= proc_csssp_auto(dat,bands, varargin)
 %
 %See also demos/demo_validate_csp
 
-props= {'CovFcn'      {@cov}                            '!FUNC|CELL'
+props= {
+    'CovFcn'      {@cov}                            '!FUNC|CELL'
     'ScoreFcn'    {@score_eigenvalues}              '!FUNC|CELL'
     'SelectFcn'   {@cspselect_equalPerClass, 3}     '!FUNC|CELL'
     'Verbose'     1                                 'INT'
     'filterOrder'   3                               'INT'
-    'ival'  []                               'DOUBLE[- -2]'
-    'alpha'      1                              'DOUBLE'
+    'ival'      'auto'                              'DOUBLE|CHAR'
+    'maxIval'    [250 5000]                         'DOUBLE[- 2]'
+    'startIval'  [750 3500]                         'DOUBLE[- 2]'
+    'alpha'      1                                  'DOUBLE'
     };
 
 if nargin==0,
@@ -74,10 +77,15 @@ dat_lap=proc_laplacian(dat);
 dat_flt= proc_filt(dat_lap, filt_b, filt_a);
 
 %% select best time interval on broad band filtered data
-ival= select_timeivalEpo(dat_flt);
-% if diff(ival)<1000
-%     ival= [mean(ival)-500 mean(ival)+500];
-% end           
+if ischar(opt.ival)&&strcmp(opt.ival,'auto')
+    ival= select_timeivalEpo(dat_flt,'maxIval',opt.maxIval,...
+    'startIval',opt.startIval);
+    % if diff(ival)<1000
+    %     ival= [mean(ival)-500 mean(ival)+500];
+    % end
+elseif isempty(opt.ival)
+    ival=[dat.t(1) dat.t(end)];
+end
 dat_lap=proc_selectIval(dat_lap,ival);
 %% Do banpassfiltering
 band1= select_bandnarrow_epo(dat_lap, 'band',bands(1,:),...
@@ -116,16 +124,20 @@ if size(bands,1)>1
     epo_noise.clab(numel(origclab_v)+1:end)=strcat(origclab_v,'noise_flt2');
 end
 dat=proc_filterbank(dat,filt_b,filt_a);
-
-ivals=nan(size(bands,1),2);
-for iFreq=1:size(bands,1)
-    dat_tmp=proc_selectChannels(dat,sprintf('*flt%i*',iFreq));
-    dat_tmp.clab=origclab_v;
-    ival= select_timeivalEpo(dat_tmp);
-%     if diff(ival)<1000
-%         ival= [mean(ival)-500 mean(ival)+500];        
-%     end
-    ivals(iFreq,:)=ival;
+if ischar(opt.ival)&&strcmp(opt.ival,'auto')
+    ivals=nan(size(bands,1),2);
+    for iFreq=1:size(bands,1)
+        dat_tmp=proc_selectChannels(dat,sprintf('*flt%i*',iFreq));
+        dat_tmp.clab=origclab_v;
+        ival= select_timeivalEpo(dat_tmp,'maxIval',opt.maxIval,...
+    'startIval',opt.startIval);
+        %     if diff(ival)<1000
+        %         ival= [mean(ival)-500 mean(ival)+500];
+        %     end
+        ivals(iFreq,:)=ival;
+    end
+else
+    ivals=[ival;ival];
 end
 %fprintf('ival: %f -%f and %f - %f',ivals(1,1),ivals(1,2),ivals(2,1),ivals(2,2))
 dat=proc_appendChannels(dat,epo_noise);
@@ -137,8 +149,10 @@ A={};
 score={};
 Ctr={};
 for ifreq=1:size(freqs{1},1)
-    epo= proc_selectIval(proc_selectChannels(dat,sprintf('*flt%d',ifreq)),ivals(ifreq,:));
-    [fv_i, csssp_w_i,csssp_a_i,csssp_score_i,Ctr_i]=proc_csssp_prefilt(epo,'SelectFcn',opt.SelectFcn,'alpha',opt.alpha);
+    epo= proc_selectIval(proc_selectChannels(dat,...
+        sprintf('*flt%d',ifreq)),ivals(ifreq,:));
+    [fv_i, csssp_w_i,csssp_a_i,csssp_score_i,Ctr_i]=proc_csssp_prefilt(...
+        epo,'SelectFcn',opt.SelectFcn,'alpha',opt.alpha);
     fv_i= proc_variance(fv_i);
     fv_i= proc_logarithm(fv_i);
     if ifreq==1
