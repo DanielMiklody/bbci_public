@@ -77,16 +77,12 @@ end
 [filt_b, filt_a] = butters(4,freqs/dat.fs*2);
 
 dat=proc_filterbank(dat,filt_b,filt_a);
-
+fv=[];
 for ifreq=1:size(freqs,1)
     epo= proc_selectIval(proc_selectChannels(dat,sprintf('*flt%d',ifreq)),ivals(ifreq,:));
     fv_i=proc_linearDerivation(epo,W{ifreq});
     fv_i= proc_variance(fv_i);
     fv_i= proc_logarithm(fv_i);
-    if ifreq==1
-        fv=fv_i;
-    else
-        fv=proc_appendChannels(fv,fv_i);
-    end
+    fv=proc_appendChannels(fv,fv_i);
 end
 

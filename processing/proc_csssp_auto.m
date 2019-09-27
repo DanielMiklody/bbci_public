@@ -88,41 +88,35 @@ elseif isempty(opt.ival)
 end
 dat_lap=proc_selectIval(dat_lap,ival);
 %% Do banpassfiltering
-band1= select_bandnarrow_epo(dat_lap, 'band',bands(1,:),...
-    'bandTopscore',bands(1,:),'areas',{});
-if band1(1)==band1(2)
-    band1=bands(1,:);
+freqs=[];
+for iFreq=1:size(freqs,1)
+band= select_bandnarrow_epo(dat_lap, 'band',bands(iFreq,:),...
+    'bandTopscore',bands(iFreq,:),'areas',{});
+if band(1)==band(2)
+    band=bands(iFreq,:);
 end
-if size(bands,1)>1
-    band2= select_bandnarrow_epo(dat_lap, 'band',bands(2,:),...
-        'bandTopscore',bands(2,:),'areas',{});
-    if band2(1)==band2(2)
-        band2=bands(2,:);
-    end
-    freqs={[band1;band2],...
-        [band1(1)*0.75 band1(2)*1.25;band2(1)*0.75 band2(2)*1.25],...
-        [band1(1)*0.95 band1(2)*1.05;band2(1)*0.95 band2(2)*1.05]};
-else
-    freqs={[band1],...
-        [band1(1)*0.75 band1(2)*1.25],...
-        [band1(1)*0.95 band1(2)*1.05]};
+freqs{1}=[freqs{1};band];
+freqs{2}=[freqs{2};[band(1)*0.75 band(2)*1.25]];
+freqs{3}=[freqs{3};[band(1)*0.95 band(2)*1.05]];
+%     fprintf('freqs %f %f selected\n',band(1),band(2))
 end
+
 [filt_b, filt_a] = butters(4,freqs{1}/dat.fs*2);
 [filt_b_pb, filt_a_pb] = butters(4,freqs{2}/dat.fs*2);
 [filt_b_sb, filt_a_sb] = butters(4,freqs{3}/dat.fs*2,'stop');
 %%
 origclab_v=dat.clab;
 
-epo_noise=proc_filterbank(dat,filt_b_pb,filt_a_pb);
-
-epo_noise=proc_filterbank(epo_noise,filt_b_sb,filt_a_sb);
-
-epo_noise=proc_selectChannels(epo_noise,'*flt1_flt1*','*flt2_flt2*');
-
-epo_noise.clab(1:numel(origclab_v))=strcat(origclab_v,'noise_flt1');
-if size(bands,1)>1
-    epo_noise.clab(numel(origclab_v)+1:end)=strcat(origclab_v,'noise_flt2');
+epo_noise1=proc_filterbank(dat,filt_b_pb,filt_a_pb);
+epo_noise=[];
+for iFreq=1:size(bands,1)
+        epo_noise_tmp=proc_selectChannels(epo_noise1,sprintf('*flt%i*',iFreq));
+        epo_noise_tmp.clab=strcat(origclab_v,sprintf('noise_flt%i',iFreq));
+        epo_noise_tmp=proc_filt(epo_noise,filt_b_sb{iFreq},filt_a_sb{iFreq});
+        epo_noise=proc_appendChannels(epo_noise,epo_noise_tmp);
 end
+clear epo_noise1 epo_noise_tmp
+
 dat=proc_filterbank(dat,filt_b,filt_a);
 if ischar(opt.ival)&&strcmp(opt.ival,'auto')
     ivals=nan(size(bands,1),2);
@@ -148,6 +142,7 @@ W={};
 A={};
 score={};
 Ctr={};
+fv=[];
 for ifreq=1:size(freqs{1},1)
     epo= proc_selectIval(proc_selectChannels(dat,...
         sprintf('*flt%d',ifreq)),ivals(ifreq,:));
@@ -155,11 +150,7 @@ for ifreq=1:size(freqs{1},1)
         epo,'SelectFcn',opt.SelectFcn,'alpha',opt.alpha);
     fv_i= proc_variance(fv_i);
     fv_i= proc_logarithm(fv_i);
-    if ifreq==1
-        fv=fv_i;
-    else
-        fv=proc_appendChannels(fv,fv_i);
-    end
+    fv=proc_appendChannels(fv,fv_i);
     W{end+1}=csssp_w_i;
     A{end+1}=csssp_a_i;
     score{end+1}=csssp_score_i;

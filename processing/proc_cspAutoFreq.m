@@ -1,4 +1,4 @@
-function [dat, varargout]= proc_cspAutoFreq(dat, freqs, varargin)
+function [fv, varargout]= proc_cspAutoFreq(dat, freqs, varargin)
 %PROC_CSPAUTO - Common Spatial Pattern Analysis with Auto Filter Selection
 %
 %Synopsis:
@@ -96,28 +96,23 @@ if ischar(opt.ival)&&strcmp(opt.ival,'auto')
     % end
 elseif isempty(opt.ival)
     ival=[dat.t(1) dat.t(end)];
+else
+    ival=opt.ival;
 end
 dat_lap=proc_selectIval(dat_lap,ival);
 %%
-band1= select_bandnarrow_epo(dat_lap, 'band',freqs(1,:),...
-    'bandTopscore',freqs(1,:),'areas',{});
-if band1(1)==band1(2)
-    band1=freqs(1,:);
+bands=[];
+for iFreq=1:size(freqs,1)
+band= select_bandnarrow_epo(dat_lap, 'band',freqs(iFreq,:),...
+    'bandTopscore',freqs(iFreq,:),'areas',{});
+if band(1)==band(2)
+    band=freqs(iFreq,:);
 end
-if size(freqs,1)>1
-    band2= select_bandnarrow_epo(dat_lap, 'band',freqs(2,:),...
-        'bandTopscore',freqs(2,:),'areas',{});
-    if band2(1)==band2(2)
-        band2=freqs(1,:);
-    end
-    freqs=[band1;band2];
-%     fprintf('freqs %f %f and %f %f selected\n',freqs(1,1),freqs(1,2),freqs(2,1),freqs(2,2))
-else
-    freqs=band1;
-%     fprintf('freqs %f %f selected\n',freqs(1,1),freqs(1,2))
+bands=[bands;band];
+%     fprintf('freqs %f %f selected\n',band(1),band(2))
 end
 
-[filt_b, filt_a] = butters(4,freqs/dat.fs*2);
+[filt_b, filt_a] = butters(4,bands/dat.fs*2);
 dat=proc_filterbank(dat,filt_b,filt_a);
 
 if ischar(opt.ival)&&strcmp(opt.ival,'auto')
@@ -141,19 +136,16 @@ end
 W={};
 A={};
 score={};
+fv=[];
 for ifreq=1:size(freqs,1)
     epo= proc_selectIval(proc_selectChannels(dat,sprintf('*flt%d',ifreq)),ivals(ifreq,:));
     [fv_i, csp_w_i,csp_a_i,csp_score_i]=proc_cspAuto(epo,opt_pickProps(opt, proc_cspAuto()));
     fv_i= proc_variance(fv_i);
     fv_i= proc_logarithm(fv_i);
-    if ifreq==1
-        fv=fv_i;
-    else
-        fv=proc_appendChannels(fv,fv_i);
-    end
+    fv=proc_appendChannels(fv,fv_i);
     W{end+1}=csp_w_i;
     A{end+1}=csp_a_i;
     score{end+1}=csp_score_i;
 end
 
-varargout={W,A,score,freqs, ivals};
+varargout={W,A,score,bands, ivals};
