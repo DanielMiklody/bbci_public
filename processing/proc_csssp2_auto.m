@@ -1,4 +1,4 @@
-function [dat2, varargout]= proc_csssp_onlineNoiseupdate(dat, W,score,C, varargin)
+function [dat, varargout]= proc_csssp_auto(dat,bands, varargin)
 %PROC_CSSDP - Common Spatio-Frequency Decomposition Pattern (CSP) Analysis
 %
 %Synopsis:
@@ -23,7 +23,7 @@ function [dat2, varargout]= proc_csssp_onlineNoiseupdate(dat, W,score,C, varargi
 %                Default: {@procutil_selectMinMax, 3}
 %                Other options, e.g., {@procutil_selectMaxAbs, 6}
 %  'Verbose' - Print warnings and other output if larger than 0. Default 1
-% 
+%
 %Returns:
 % DAT   - updated data structure
 % CSP_W - CSP projection matrix (spatial filters, in the columns)
@@ -42,72 +42,67 @@ function [dat2, varargout]= proc_csssp_onlineNoiseupdate(dat, W,score,C, varargi
 %See also demos/demo_validate_csp
 
 props= {'CovFcn'      {@cov}                            '!FUNC|CELL'
-        'ScoreFcn'    {@score_eigenvalues}              '!FUNC|CELL'
-        'lambda'      0.001                              'DOUBLE'
-        'updateStationarity' 1                           'INT'
-        'alpha'       0.1                             'DOUBLE'
-        'Verbose'     1                                 'INT'
-       };
+    'ScoreFcn'    {@score_eigenvalues}              '!FUNC|CELL'
+    'SelectFcn'   {@cspselect_equalPerClass, 3}     '!FUNC|CELL'
+    'Verbose'     1                                 'INT'
+    'filterOrder'   3                               'INT'
+    'alpha'      1                              'DOUBLE'
+    };
 
 if nargin==0,
-  dat= props; return
+    dat= props; return
 end
 
-misc_checkType(dat, 'STRUCT(x y)'); 
+misc_checkType(dat, 'STRUCT(x y)');
 misc_checkType(dat.y, 'DOUBLE[2 -]', 'dat.y');    % two classes only
 opt= opt_proplistToStruct(varargin{:});
 opt= opt_setDefaults(opt, props);
 opt_checkProplist(opt, props);
 dat= misc_history(dat);
 
+
+
 % Calculate classwise covariance matrices
 [covFcn, covPar]= misc_getFuncParam(opt.CovFcn);
 
-epo_noise=proc_selectChannels(dat,'*noise*');
-dat=proc_selectChannels(dat,'not','*noise*');
-nChans= size(W, 2);
-nEpo= size(epo_noise.x, 3);
-dat2= proc_linearDerivation(dat, W, 'prependix','csssp');
-D=diag(score);
-
-for ii=1:nEpo
-    X_n=epo_noise.x(:,:,ii);
-    if opt.updateStationarity
-        C_temp= covFcn(dat.x(:,:,ii), covPar{:});    
-        C=(1-opt.lambda)*C+opt.lambda*C_temp;
-        [V,D_k]=eig(C_temp-C);
-        C_k=abs((C_temp-C)*sign(D_k));
-    else
-        C_k=zeros(size(X_n,2));
-    end
-    C_n= (1-opt.lambda)*eye(nChans)+opt.lambda*W'*(covFcn(X_n, covPar{:})+opt.alpha*C_k)*W;
-    % ORIGINAL CODE FOR COMPUTING CSSDP IN CHANNEL SPACE
-    [V, D]= eig( D, C_n );
-    %resort (eig mixes them up) THIS IS RATHER A HOTFIX
-    [~,imax]=max(abs(V));
-    [~,inds]=sort(imax);
-    V=V(:,inds).*repmat(sign(diag(V(:,inds))),1,nChans)';
-    D=diag(diag(D(inds,inds)));
-    W=W*V;
-    dat2.x(:,:,ii)=dat.x(:,:,ii)*W;
+%% Do banpassfiltering
+dat_lap=proc_laplacian(dat);
+band1= select_bandnarrow_epo(dat_lap, 'band',bands(1,:),...
+    'bandTopscore',bands(1,:),'areas',{});
+band2= select_bandnarrow_epo(dat_lap, 'band',bands(2,:),...
+    'bandTopscore',bands(2,:),'areas',{});
+if band1(1)==band1(2)
+    band1=bands(1,:);
 end
-
-% Calculate score for each CSP channel
-% [scoreFcn, scorePar]= misc_getFuncParam(opt.ScoreFcn);
-% score= scoreFcn(dat2, W, D, scorePar{:});
-    
-
-% Save old channel labels
-if isfield(dat2, 'clab'),
-  dat2.origClab= dat2.clab;
+if band2(1)==band2(2)
+    band2=bands(2,:);
 end
+freqs={[band1;band2],...
+    [band1(1)*0.75 band1(2)*1.25;band2(1)*0.75 band2(2)*1.25],...
+    [band1(1)*0.95 band1(2)*1.05;band2(1)*0.95 band2(2)*1.05]};
+[filt_b, filt_a] = butters(4,freqs{1}/dat.fs*2);
+[filt_b_pb, filt_a_pb] = butters(4,freqs{2}/dat.fs*2);
+[filt_b_sb, filt_a_sb] = butters(4,freqs{3}/dat.fs*2,'stop');
 
-% Apply CSP filters to time series
-% dat= proc_linearDerivation(dat, W, 'prependix','cssdp');
+origclab_v=dat.clab;
 
-% Determine patterns according to [Haufe et al, Neuroimage, 87:96-110, 2014]
-% http://dx.doi.org/10.1016/j.neuroimage.2013.10.067
-% C_avg = mean(C,3);
-% A= C_avg * W / (W'*C_avg*W);
+epo_noise=proc_filterbank(dat,filt_b_pb,filt_a_pb);
 
-varargout= {W , C};
+epo_noise=proc_filterbank(epo_noise,filt_b_sb,filt_a_sb);
+
+epo_noise=proc_selectChannels(epo_noise,'*flt1_flt1*','*flt2_flt2*','*flt3_flt3*');
+
+epo_noise.clab(1:numel(origclab_v))=strcat(origclab_v,'noise_flt1');
+epo_noise.clab(numel(origclab_v)+1:end)=strcat(origclab_v,'noise_flt2');
+
+dat2=proc_filterbank(dat,filt_b,filt_a);
+dat2=proc_appendChannels(dat2,epo_noise);
+
+[dat2, W, A, score,Ctr]=proc_multiBandSpatialFilter(dat2,...
+    {@proc_csssp_prefilt,'SelectFcn',opt.SelectFcn,'alpha',opt.alpha});
+dat=proc_multiBandLinearDerivation(dat,W);    
+X= permute(dat.x, [1 3 2]);
+X= reshape(X, [], nChans);
+Ctr=covFcn(X, covPar{:});
+A= Ctr * W / (W'*Ctr*W);
+varargout= {W, A, score, Ctr, freqs};
