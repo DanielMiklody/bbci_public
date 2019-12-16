@@ -1,4 +1,4 @@
-function [fv, varargout]= proc_cspAutoFreq(dat, freqs, varargin)
+function [fv, varargout]= proc_cspAutoMultiFreq(dat, freqs, varargin)
 %PROC_CSPAUTO - Common Spatial Pattern Analysis with Auto Filter Selection
 %
 %Synopsis:
@@ -45,17 +45,14 @@ function [fv, varargout]= proc_cspAutoFreq(dat, freqs, varargin)
 %See also demos/demo_validate_csp
 
 % Author(s): Benjamin Blankertz
-props= {'patterns'     3           'INT|CHAR'
-        'ival'          []          'DOUBLE|CHAR'
-        'maxIval'       [250 5000]  'DOUBLE[- 2]'
-        'startIval'     [750 3500]  'DOUBLE[- 2]'
-        'score'        'medianvar' '!CHAR(eigenvalues medianvar auc)'
-        'covPolicy'    'average'   'CHAR|DOUBLE[- - 2]'
-        'scaling'      'none'      'CHAR'
-        'normalize'    0           'BOOL'
-        'selectPolicy' 'directorscut'  'CHAR'
-        'weight'       []   'DOUBLE'
-        'weightExp'    1           'BOOL'};
+props= { 'patterns'     3           'INT|CHAR'
+         'score'        'medianvar' '!CHAR(eigenvalues medianvar auc)'
+         'covPolicy'    'average'   'CHAR|DOUBLE[- - 2]'
+         'scaling'      'none'      'CHAR'
+         'normalize'    0           'BOOL'
+         'selectPolicy' 'directorscut'  'CHAR'
+         'weight'       ones(1,size(dat.y,2))   'DOUBLE'
+         'weightExp'    1           'BOOL'};
 
 if nargin==0,
   dat = props; return
@@ -70,9 +67,6 @@ else
 end
 [opt, isdefault]= opt_setDefaults(opt, props);
 opt_checkProplist(opt, props);
-if isempty(opt.weight)
-    opt.weight=ones(1,size(dat.y,2)) ;
-end
 
 [T, nChans, nEpochs]= size(dat.x);
 
@@ -88,64 +82,60 @@ dat_lap=proc_laplacian(dat);
 dat_flt= proc_filt(dat_lap, filt_b, filt_a);
 
 %% select best time interval on broad band filtered data
-if ischar(opt.ival)&&strcmp(opt.ival,'auto')
-    ival= select_timeivalEpo(dat_flt,'maxIval',opt.maxIval,...
-    'startIval',opt.startIval);
-    % if diff(ival)<1000
-    %     ival= [mean(ival)-500 mean(ival)+500];
-    % end
-elseif isempty(opt.ival)
-    ival=[dat.t(1) dat.t(end)];
-else
-    ival=opt.ival;
-end
+ival= select_timeivalEpo(dat_flt);
+% if diff(ival)<1000
+%     ival= [mean(ival)-500 mean(ival)+500];
+% end           
 dat_lap=proc_selectIval(dat_lap,ival);
-%%
-bands=[];
-for iFreq=1:size(freqs,1)
-band= select_bandnarrow_epo(dat_lap, 'band',freqs(iFreq,:),...
-    'bandTopscore',freqs(iFreq,:),'areas',{});
-if band(1)==band(2)
-    band=freqs(iFreq,:);
+
+band1= select_bandnarrow_epo(dat_lap, 'band',freqs(1,:),...
+    'bandTopscore',freqs(1,:),'areas',{});
+if band1(1)==band1(2)
+    band1=freqs(1,:);
 end
-bands=[bands;band];
-%     fprintf('freqs %f %f selected\n',band(1),band(2))
+if size(freqs,1)>1
+    band2= select_bandnarrow_epo(dat_lap, 'band',freqs(2,:),...
+        'bandTopscore',freqs(2,:),'areas',{});
+    if band2(1)==band2(2)
+        band2=freqs(1,:);
+    end
+    freqs=[band1;band2];
+else
+    freqs=band1;
 end
 
-[filt_b, filt_a] = butters(4,bands/dat.fs*2);
+[filt_b, filt_a] = butters(4,freqs/dat.fs*2);
 dat=proc_filterbank(dat,filt_b,filt_a);
 
-if ischar(opt.ival)&&strcmp(opt.ival,'auto')
-    ivals=nan(size(bands,1),2);
-    for iFreq=1:size(bands,1)
-        dat_tmp=proc_selectChannels(dat,sprintf('*flt%i*',iFreq));
-        dat_tmp.clab=clab_load;
-        ival= select_timeivalEpo(dat_tmp,'maxIval',opt.maxIval,...
-            'startIval',opt.startIval);
-        %     if diff(ival)<1000
-        %         ival= [mean(ival)-500 mean(ival)+500];
-        %     end
-        ivals(iFreq,:)=ival;
-    end
-else
-    ivals=[ival;ival];
+ivals=cell(1,size(freqs,1));
+for iFreq=1:size(freqs,1)
+    dat_tmp=proc_selectChannels(dat,sprintf('*flt%i*',iFreq));
+    dat_tmp.clab=clab_load;
+    ival= select_timeivalEpo(dat_tmp);
+%     if diff(ival)<1000
+%         ival= [mean(ival)-500 mean(ival)+500];        
+%     end
+    ivals{iFreq}=ival;
 end
-% dat=proc_selectIval(dat,ival);
+
 % [dat, W, A, score]=proc_multiBandSpatialFilter(dat,...
 %     {@proc_cspAuto,opt});
 W={};
 A={};
 score={};
-fv=[];
 for ifreq=1:size(freqs,1)
-    epo= proc_selectIval(proc_selectChannels(dat,sprintf('*flt%d',ifreq)),ivals(ifreq,:));
-    [fv_i, csp_w_i,csp_a_i,csp_score_i]=proc_cspAuto(epo,opt_pickProps(opt, proc_cspAuto()));
+    epo= proc_selectIval(proc_selectChannels(dat,sprintf('*flt%d',ifreq)),ivals{ifreq});
+    [fv_i, csp_w_i,csp_a_i,csp_score_i]=proc_cspAuto(epo,opt);
     fv_i= proc_variance(fv_i);
     fv_i= proc_logarithm(fv_i);
-    fv=proc_appendChannels(fv,fv_i);
+    if ifreq==1
+        fv=fv_i;
+    else
+        fv=proc_appendChannels(fv,fv_i);
+    end
     W{end+1}=csp_w_i;
     A{end+1}=csp_a_i;
     score{end+1}=csp_score_i;
 end
 
-varargout={W,A,score,bands, ivals};
+varargout={W,A,score,filt_b, filt_a, ivals};

@@ -1,4 +1,4 @@
-function [dat2, varargout]= proc_csssp_onlineNoiseupdate(dat, W,score,C, varargin)
+function [dat2, varargout]= proc_csssp_orig_onlineNoiseupdate(dat, W,score,C, varargin)
 %PROC_CSSDP - Common Spatio-Frequency Decomposition Pattern (CSP) Analysis
 %
 %Synopsis:
@@ -76,7 +76,8 @@ for ii=1:nEpo
         C_temp= covFcn(dat.x(:,:,ii), covPar{:});    
         C=(1-opt.lambda)*C+opt.lambda*C_temp;
         [V,D_k]=eig(C_temp-C);
-        C_k=abs((C_temp-C)*sign(D_k));
+        %C_k=abs((C_temp-C)*sign(D_k));
+        C_k=V*abs(D_k)*V';
     else
         C_k=zeros(size(X_n,2));
     end

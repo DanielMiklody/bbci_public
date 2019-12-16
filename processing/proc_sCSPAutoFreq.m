@@ -1,4 +1,4 @@
-function [fv, varargout]= proc_cspAutoFreq(dat, freqs, varargin)
+function [fv, varargout]= proc_sCSPAutoFreq(dat, freqs, varargin)
 %PROC_CSPAUTO - Common Spatial Pattern Analysis with Auto Filter Selection
 %
 %Synopsis:
@@ -55,7 +55,10 @@ props= {'patterns'     3           'INT|CHAR'
         'normalize'    0           'BOOL'
         'selectPolicy' 'directorscut'  'CHAR'
         'weight'       []   'DOUBLE'
-        'weightExp'    1           'BOOL'};
+        'weightExp'    1           'BOOL'
+        'alpha'      1                              'DOUBLE'
+        'chunksize'      10                              'DOUBLE'
+        };
 
 if nargin==0,
   dat = props; return
@@ -103,8 +106,9 @@ dat_lap=proc_selectIval(dat_lap,ival);
 %%
 bands=[];
 for iFreq=1:size(freqs,1)
-band= select_bandnarrow_epo(dat_lap, 'band',freqs(iFreq,:),...
-    'bandTopscore',freqs(iFreq,:),'areas',{});
+%band= select_bandnarrow_epo(dat_lap, 'band',freqs(iFreq,:),...
+%    'bandTopscore',freqs(iFreq,:),'areas',{});
+band= select_bandbroad_epo(dat_lap, 'band',freqs(iFreq,:));
 if band(1)==band(2)
     band=freqs(iFreq,:);
 end
@@ -133,13 +137,14 @@ end
 % dat=proc_selectIval(dat,ival);
 % [dat, W, A, score]=proc_multiBandSpatialFilter(dat,...
 %     {@proc_cspAuto,opt});
+
 W={};
 A={};
 score={};
 fv=[];
 for ifreq=1:size(freqs,1)
     epo= proc_selectIval(proc_selectChannels(dat,sprintf('*flt%d',ifreq)),ivals(ifreq,:));
-    [fv_i, csp_w_i,csp_a_i,csp_score_i]=proc_cspAuto(epo,opt_pickProps(opt, proc_cspAuto()));
+    [fv_i, csp_w_i,csp_a_i,csp_score_i]=proc_sCSPAuto(epo,opt_pickProps(opt, proc_sCSPAuto()));
     fv_i= proc_variance(fv_i);
     fv_i= proc_logarithm(fv_i);
     fv=proc_appendChannels(fv,fv_i);

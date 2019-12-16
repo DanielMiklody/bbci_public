@@ -85,13 +85,23 @@ X= permute(dat.x, [1 3 2]);
 X= reshape(X, [], nChans);
 Ctr=covFcn(X, covPar{:});
 C_k=zeros(nChans,nChans,nEpo);
+% for k= 1:nEpo,
+%   C_temp= covFcn(dat.x(:,:,k), covPar{:})-Ctr;
+%   try
+%     [~,D_k]=eig(C_temp);
+%   catch
+%       D_k=ones(size(C_temp));
+%   end
+%   C_k(:,:,k)=abs(C_temp*sign(D_k));
+% end
 for k= 1:nEpo,
-  C_temp= covFcn(dat.x(:,:,k), covPar{:})-Ctr;
-  try
-    [~,D_k]=eig(C_temp);
-  catch
-      D_k=ones(size(C_temp));
+  C_temp= covFcn(dat.x(:,:,k), covPar{:});
+  if dat.y(1,k)
+      C_temp=C_temp-C_c(:,:,1);
+  else
+      C_temp=C_temp-C_c(:,:,2);
   end
+  [~,D_k]=eig(C_temp);
   C_k(:,:,k)=abs(C_temp*sign(D_k));
 end
 C_k=mean(C_k,3);

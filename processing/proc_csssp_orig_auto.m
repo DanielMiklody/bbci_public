@@ -1,4 +1,4 @@
-function [fv, varargout]= proc_csssp_auto(dat,bands, varargin)
+function [fv, varargout]= proc_csssp_orig_auto(dat,bands, varargin)
 %PROC_CSSDP - Common Spatio-Frequency Decomposition Pattern (CSP) Analysis
 %
 %Synopsis:
@@ -90,8 +90,7 @@ dat_lap=proc_selectIval(dat_lap,ival);
 %% Do banpassfiltering
 freqs=cell(1,3);
 for iFreq=1:size(bands ,1)
-band= select_bandbroad_epo(dat_lap, 'band',bands(iFreq,:),...
-   'areas',{});
+band= select_bandbroad_epo(dat_lap, 'band',bands(iFreq,:));
 %band= select_bandnarrow_epo(dat_lap, 'band',bands(iFreq,:),...
     %'bandTopscore',bands(iFreq,:),'areas',{});
 if band(1)==band(2)
@@ -148,7 +147,7 @@ fv=[];
 for ifreq=1:size(freqs{1},1)
     epo= proc_selectIval(proc_selectChannels(dat,...
         sprintf('*flt%d',ifreq)),ivals(ifreq,:));
-    [fv_i, csssp_w_i,csssp_a_i,csssp_score_i,Ctr_i]=proc_csssp_prefilt(...
+    [fv_i, csssp_w_i,csssp_a_i,csssp_score_i,Ctr_i]=proc_csssp_prefilt_orig(...
         epo,'SelectFcn',opt.SelectFcn,'alpha',opt.alpha);
     fv_i= proc_variance(fv_i);
     fv_i= proc_logarithm(fv_i);
