@@ -85,6 +85,8 @@ if ischar(opt.ival)&&strcmp(opt.ival,'auto')
     % end
 elseif isempty(opt.ival)
     ival=[dat.t(1) dat.t(end)];
+else
+    ival=opt.ival;
 end
 dat_lap=proc_selectIval(dat_lap,ival);
 %% Do banpassfiltering
