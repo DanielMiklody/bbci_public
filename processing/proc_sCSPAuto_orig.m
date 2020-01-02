@@ -109,6 +109,7 @@ for k=1:2
         C_l(:,:,l)=V*abs(D_k)*V';
     end
     C_k(:,:,k)=mean(C_l,3);
+    C_c(:,:,k)=C_c(:,:,k)/trace(C_c(:,:,k));
 end
 C_k=sum(C_k,3);
 C_k=C_k/trace(C_k);
