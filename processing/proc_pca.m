@@ -36,7 +36,7 @@ if nargin==0,
 end
 
 dat = misc_history(dat);
-misc_checkType(dat, 'STRUCT(x clab y)');
+misc_checkType(dat, 'STRUCT(x clab)');
 
 opt = opt_proplistToStruct(varargin{:});
 opt = opt_setDefaults(opt, props);
