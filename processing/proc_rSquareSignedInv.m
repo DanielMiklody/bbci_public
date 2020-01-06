@@ -1,4 +1,4 @@
-function fv= proc_rSquareInv(fv, varargin)
+function fv= proc_rSquareSignedInv(fv, varargin)
 %PROC_RSQUARESIGNED - computes signed r^2 values (measure for discriminance)
 %
 %Synopsis:
@@ -61,7 +61,7 @@ if nargin==0,
 end
 
 fv= proc_rValues(fv, varargin{:});
-fv.x= (1-abs(fv.x)).^2 ;
+fv.x= (1-abs(fv.x)).^2 .*sign(fv.x);
 for cc= 1:length(fv.className),
   fv.className{cc}= ['inv r^2' fv.className{cc}(2:end)];
 end
