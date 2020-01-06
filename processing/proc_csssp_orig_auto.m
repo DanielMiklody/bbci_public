@@ -52,7 +52,7 @@ props= {
     'noiseband'   0                                 'INT'
     'startIval'  [750 3500]                         'DOUBLE[- 2]'
     'alpha'      1                                  'DOUBLE'
-    'maxival'    [4 45]                             'DOUBLE[- 2]'
+    'maxFreqIval' [4 45]                             'DOUBLE[- 2]'
     };
 
 if nargin==0,
@@ -102,14 +102,14 @@ freqs{1}=[freqs{1};band];
 if opt.noiseband==3
     searchbandsL=[band(1)*0.7 band(1)-0.5];
     searchbandsH=[band(2)+0.5 band(2)*1.3];
-    if searchbandsL(1)<opt.maxival(1)
-        searchbandsL(1)=opt.maxival(1);
+    if searchbandsL(1)<opt.maxFreqIval(1)
+        searchbandsL(1)=opt.maxFreqIval(1);
     end
 %     if serachbandsL(2)>opt.maxival(1)
 %         serachbandsL(1)=opt.maxival(1);
 %     end
-    if searchbandsH(2)>opt.maxival(2)
-        searchbandsH(2)=opt.maxival(2);
+    if searchbandsH(2)>opt.maxFreqIval(2)
+        searchbandsH(2)=opt.maxFreqIval(2);
     end
     band_n1=select_bandbroad(dat_lap,...
         'scoreProc',@proc_rSquareInv,...
