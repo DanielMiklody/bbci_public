@@ -1,11 +1,11 @@
-function band= select_bandbroad(cnt, mrk, ival, varargin)
+function band= select_bandbroad(dat, varargin)
 %band= select_bandnarrow(cnt, mrk, ival, <opt>)
 
 motor_areas= {{'FC5,3','CFC5,3','C5,3','CCP5,3','CP5,3'},
               {'FC1-2','CFC1-2','C1-2','CCP1-2','CP1-2'}, 
               {'FC4,6','CFC4,6','C4,6','CCP4,6','CP4,6'}};
           
-done_laplace= regexpi(cnt.clab,'^\w+ lap\w*');
+done_laplace= regexpi(dat.clab,'^\w+ lap\w*');
 done_laplace= any(cell2mat(done_laplace));
 
 
@@ -19,35 +19,51 @@ props= {'band'          [5 35]
         'thresholdValley' 0.1};
 
 if nargin==0,
-  ival = props; return
+  band = props; return
 end
 
 
-misc_checkType(cnt, 'STRUCT(x clab fs)'); 
-misc_checkType(mrk, 'STRUCT(time)'); 
+misc_checkType(dat, 'STRUCT(x clab fs)'); 
 
-opt= opt_proplistToStruct(varargin{:});
+if ~isfield(dat,'y')&&~isstruct(varargin{1})
+    error('Specify markers and time interval for unepoched data!')
+elseif ~isfield(dat,'y')&&isstruct(varargin{1})
+    mrk=varargin{1};
+    ival=varargin{2};  
+    misc_checkType(mrk, 'STRUCT(time)'); 
+    misc_checkType(ival, 'DOUBLE[2]');  
+    opt= opt_proplistToStruct(varargin{3:end});
+else
+    opt= opt_proplistToStruct(varargin{:});
+end
 
 [opt, isdefault]= opt_setDefaults(opt, props);
 opt_checkProplist(opt, props);
 
 if isempty(opt.areas),
-  opt.areas= {cnt.clab};
+  opt.areas= {dat.clab};
 end
 
 [score_fcn, score_param]= misc_getFuncParam(opt.scoreProc);
 
 if opt.doLaplace,
-  cnt= proc_laplacian(cnt);
+  dat= proc_laplacian(dat);
 end
 
-cnt= proc_selectChannels(cnt, cat(2, opt.areas{:}));
-spec= proc_segmentation(cnt, mrk, ival);
-spec= proc_spectrum(spec, opt.band);
+dat= proc_selectChannels(dat, cat(2, opt.areas{:}));
+if ~isfield(dat,'y')
+    dat= proc_segmentation(dat, mrk, ival);    
+end
+spec= proc_spectrum(dat, opt.band);
 %%spec= proc_spectrum(spec, opt.band, 'db_scaled',0);  %% isn't this better?
 score= score_fcn(spec, score_param{:});
+% figure
+% imagesc(score.x')
+% set(gca(),'xTickLabel',score.t)
+% set(gca(),'yTickLabel',score.clab)
+% colorbar
 if opt.smoothSpectrum,
-  score= proc_movingAverage(score, 3000/cnt.fs, 'method','centered', 'window',[.5 1 .5]');
+  score= proc_movingAverage(score, 3000/dat.fs, 'method','centered', 'window',[.5 1 .5]');
 end
 
 %% for each channel calc a positive (class 1 > class 2) and a

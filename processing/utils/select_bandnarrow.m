@@ -1,4 +1,4 @@
-function band= select_bandnarrow(cnt, mrk, ival, varargin)
+function band= select_bandnarrow(dat, varargin)
 %SELECT_BANDNARROW - Select a narrow frequency band with good descrimination
 %
 %Synopsis:
@@ -52,7 +52,7 @@ motor_areas= {{'FC5,3','CFC5,3','C5,3','CCP5,3','CP5,3'},
               {'FC1-2','CFC1-2','C1-2','CCP1-2','CP1-2'}, 
               {'FC4,6','CFC4,6','C4,6','CCP4,6','CP4,6'}};
 
-done_laplace= regexpi(cnt.clab,'^\w+ lap\w*');
+done_laplace= regexpi(dat.clab,'^\w+ lap\w*');
 done_laplace= any(cell2mat(done_laplace));
 
 props= {'band'          [5 35]
@@ -67,19 +67,28 @@ props= {'band'          [5 35]
         'thresholdExt' 1/2};
 
 if nargin==0,
-  ival = props; return
+  band = props; return
 end
 
-misc_checkType(cnt, 'STRUCT(x clab fs)'); 
-misc_checkType(mrk, 'STRUCT(time)'); 
+misc_checkType(dat, 'STRUCT(x clab fs)'); 
 
-opt= opt_proplistToStruct(varargin{:});
+if ~isfield(dat,'y')&&~isstruct(varargin{1})
+    error('Specify markers and time interval for unepoched data!')
+elseif ~isfield(dat,'y')&&isstruct(varargin{1})
+    mrk=varargin{1};
+    ival=varargin{2};  
+    misc_checkType(mrk, 'STRUCT(time)'); 
+    misc_checkType(ival, 'DOUBLE[2]');  
+    opt= opt_proplistToStruct(varargin{3:end});
+else
+    opt= opt_proplistToStruct(varargin{:});
+end
 
 [opt, isdefault]= opt_setDefaults(opt, props);
 opt_checkProplist(opt, props);
 
 if isempty(opt.areas),
-  opt.areas= {cnt.clab};
+  opt.areas= {dat.clab};
 end
 
 % Sanity check: interval "bandTopscore" must be within interval "band"
@@ -95,22 +104,27 @@ end
 [score_fcn, score_param]= misc_getFuncParam(opt.scoreProc);
 
 if opt.doLaplace,
-  cnt= proc_laplacian(cnt,'requireCompleteNeighborhood', opt.laplaceRequireNeighborhood);
+  dat= proc_laplacian(dat,'requireCompleteNeighborhood', opt.laplaceRequireNeighborhood);
 end
-if diff(ival)>=1000,                      
-  winlen= cnt.fs;                                   
-  spec_ival= ival;                              
-else                                                
-  winlen= cnt.fs/2;                                 
-  if diff(ival)<500,                            
-%     bbci_bet_message('Enlarging interval to calculate spectra\n');
-    spec_ival=  mean(ival) + [-250 250];                      
-  else                                                            
-    spec_ival= ival;                                          
-  end                                                             
-end                                                               
-spec= proc_segmentation(cnt, mrk, spec_ival, 'CLab', cat(2, opt.areas{:}));
-spec= proc_spectrum(spec, opt.band, 'Win',kaiser(winlen,2));
+
+if ~isfield(dat,'y')
+    if diff(ival)>=1000,
+        winlen= dat.fs;
+        spec_ival= ival;
+    else
+        winlen= dat.fs/2;
+        if diff(ival)<500,
+            %     bbci_bet_message('Enlarging interval to calculate spectra\n');
+            spec_ival=  mean(ival) + [-250 250];
+        else
+            spec_ival= ival;
+        end
+    end
+    dat= proc_segmentation(dat, mrk, spec_ival, 'CLab', cat(2, opt.areas{:}));
+else
+    dat= proc_selectChannels(dat, cat(2, opt.areas{:}));
+end
+spec= proc_spectrum(dat, opt.band, 'Win',kaiser(winlen,2));
 %% or this?
 %spec= proc_spectrum(spec, opt.band, 'Win',kaiser(winlen,2), 'DBScaled',0);
 score= score_fcn(spec, score_param{:});

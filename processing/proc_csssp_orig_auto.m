@@ -49,8 +49,10 @@ props= {
     'filterOrder'   3                               'INT'
     'ival'      'auto'                              'DOUBLE|CHAR'
     'maxIval'    [250 5000]                         'DOUBLE[- 2]'
+    'noiseband'   0                                 'INT'
     'startIval'  [750 3500]                         'DOUBLE[- 2]'
     'alpha'      1                                  'DOUBLE'
+    'maxival'    [4 45]                             'DOUBLE[- 2]'
     };
 
 if nargin==0,
@@ -90,16 +92,39 @@ dat_lap=proc_selectIval(dat_lap,ival);
 %% Do banpassfiltering
 freqs=cell(1,3);
 for iFreq=1:size(bands ,1)
-band= select_bandbroad_epo(dat_lap, 'band',bands(iFreq,:));
+band= select_bandbroad(dat_lap, 'band',bands(iFreq,:));
 %band= select_bandnarrow_epo(dat_lap, 'band',bands(iFreq,:),...
     %'bandTopscore',bands(iFreq,:),'areas',{});
 if band(1)==band(2)
     band=bands(iFreq,:);
 end
 freqs{1}=[freqs{1};band];
-freqs{2}=[freqs{2};[band(1)*0.75 band(2)*1.25]];
-freqs{3}=[freqs{3};[band(1)*0.95 band(2)*1.05]];
-%     fprintf('freqs %f %f selected\n',band(1),band(2))
+if opt.noiseband==3
+    searchbandsL=[band(1)*0.7 band(1)-0.5];
+    searchbandsH=[band(2)+0.5 band(2)*1.3];
+    if searchbandsL(1)<opt.maxival(1)
+        searchbandsL(1)=opt.maxival(1);
+    end
+%     if serachbandsL(2)>opt.maxival(1)
+%         serachbandsL(1)=opt.maxival(1);
+%     end
+    if searchbandsH(2)>opt.maxival(2)
+        searchbandsH(2)=opt.maxival(2);
+    end
+    band_n1=select_bandbroad(dat_lap,...
+        'scoreProc',@proc_rSquareInv,...
+        'band',searchbandsL);
+    band_n2=select_bandbroad(dat_lap,...
+        'scoreProc',@proc_rSquareInv,...
+        'band',searchbandsH);
+    freqs{2}=[freqs{2};band_n1(1) band_n2(2)];
+    freqs{3}=[freqs{3};band_n1(2) band_n2(1)];
+else
+    freqs{2}=[freqs{2};[band(1)*0.75 band(2)*1.25]];
+    freqs{3}=[freqs{3};[band(1)*0.95 band(2)*1.05]];
+end
+% fprintf('Freqs %i: noise1 %d -%d signal %d %d noise2 %d %d\n',iFreq,...
+%     band_n1,band,band_n2)
 end
 
 [filt_b, filt_a] = butters(4,freqs{1}/dat.fs*2);
