@@ -1,8 +1,8 @@
 function [dat, varargout]= proc_sCSP_orig_prefilt(dat, varargin)
-%PROC_CSSDP - Common Spatio-Frequency Decomposition Pattern (CSP) Analysis
+%PROC_sCSP - stationary Common Spatial Pattern (sCSP) Analysis
 %
 %Synopsis:
-% [DAT, CSSDP_W, CSSDP_A, SCORE]= proc_cssdp_prefilt(DAT, <OPT>);
+% [DAT, sCSP_W, sCSP_A, SCORE]= proc_sCSP_orig_prefilt(DAT, <OPT>);
 %
 %Arguments:
 % DAT - data structure of epoched data
@@ -47,7 +47,7 @@ props= {'CovFcn'      {@cov}                            '!FUNC|CELL'
         'Verbose'     1                                 'INT'
         'filterOrder'   3                               'INT'
         'ival'  []                               'DOUBLE[- -2]'
-        'alpha'      1                              'DOUBLE'
+        'alpha'         0.01                              'DOUBLE'
         'chunksize'      10                              'DOUBLE'
        };
 
@@ -75,7 +75,7 @@ for k= 1:2,
   C_c(:,:,k)= covFcn(X, covPar{:});
 end
 
-
+%Calculate non-stationarity matrix
 X= permute(dat.x, [1 3 2]);
 X= reshape(X, [], nChans);
 Ctr=covFcn(X, covPar{:});
@@ -90,26 +90,27 @@ for k=1:2
     for l= 1:size(X,3),
         C_temp=covFcn(X(:,:,l), covPar{:})-C_c(:,:,k);
         [V,D_k]=eig(C_temp);
-        %C_l(:,:,l)=abs(C_temp*sign(D_k));
         C_l(:,:,l)=V*abs(D_k)*V';
     end
     C_k(:,:,k)=mean(C_l,3);
+    %calculate the trace of classwise covariance matrix (or before
+    %non-stationarity?
     C_c(:,:,k)=C_c(:,:,k)/trace(C_c(:,:,k));
 end
 C_k=sum(C_k,3);
 C_k=C_k/trace(C_k);
 
-% ORIGINAL CODE FOR COMPUTING CSSDP IN CHANNEL SPACE
+% ORIGINAL CODE FOR COMPUTING sCSP IN CHANNEL SPACE
 % % Do actual CSSDP computation as generalized eigenvalue decomposition
 [W1, D1]= eig( C_c(:,:,1), C_c(:,:,1)+C_c(:,:,2)+opt.alpha*(C_k) );
 [W2, D2]= eig( C_c(:,:,2), C_c(:,:,1)+C_c(:,:,2)+opt.alpha*(C_k) );
 
-% Calculate score for each CSP channel
+% Calculate score for each sCSP channel
 [scoreFcn, scorePar]= misc_getFuncParam(opt.ScoreFcn);
 score1= scoreFcn(dat, W1, D1, scorePar{:});
 score2= scoreFcn(dat, W1, D2, scorePar{:});
 
-% Select desired CSSDP filters
+% Select desired sCSP filters
 [selectFcn, selectPar]= misc_getFuncParam(opt.SelectFcn);
 if numel(selectPar{1})>1
     if chanind(dat,'*flt1*')
