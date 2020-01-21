@@ -72,7 +72,7 @@ C_c= zeros(nChans, nChans, 2);
 for k= 1:2,
   X= permute(dat.x(:,:,dat.y(k,:)==1), [1 3 2]);
   X= reshape(X, [], nChans);
-  C_c(:,:,k)= covFcn(X, covPar{:});
+  C_c(:,:,k)= covFcn(X, covPar{:});%cov per trial + average
 end
 
 %Calculate non-stationarity matrix
@@ -97,8 +97,10 @@ for k=1:2
     %non-stationarity?
     C_c(:,:,k)=C_c(:,:,k)/trace(C_c(:,:,k));
 end
+C_k(:,:,1)=C_k(:,:,1)/trace(C_k(:,:,1));%klassenweise normalisieren
+C_k(:,:,2)=C_k(:,:,2)/trace(C_k(:,:,2));%klassenweise normalisieren
 C_k=sum(C_k,3);
-C_k=C_k/trace(C_k);
+% C_k=C_k/trace(C_k);%klassenweise normalisieren
 
 % ORIGINAL CODE FOR COMPUTING sCSP IN CHANNEL SPACE
 % % Do actual CSSDP computation as generalized eigenvalue decomposition
