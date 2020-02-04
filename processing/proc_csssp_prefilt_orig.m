@@ -81,6 +81,7 @@ end
 X= permute(epo_noise.x, [1 3 2]);
 X= reshape(X, [], nChans);
 C_n= covFcn(X, covPar{:});
+%C_n=C_n/trace(C_n);
 
 X= permute(dat.x, [1 3 2]);
 X= reshape(X, [], nChans);
@@ -100,6 +101,7 @@ for k=1:2
         C_l(:,:,l)=V*abs(D_k)*V';
     end
     C_k(:,:,k)=mean(C_l,3);
+    %C_k(:,:,k)=C_k(:,:,k)/trace(C_k(:,:,k));
 end
 C_k=sum(C_k,3);
 

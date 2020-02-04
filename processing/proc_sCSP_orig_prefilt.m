@@ -70,9 +70,11 @@ nChans= size(dat.x, 2);
 nEpo=size(dat.x,3);
 C_c= zeros(nChans, nChans, 2);
 for k= 1:2,
-  X= permute(dat.x(:,:,dat.y(k,:)==1), [1 3 2]);
-  X= reshape(X, [], nChans);
-  C_c(:,:,k)= covFcn(X, covPar{:});%cov per trial + average
+  Y=dat.x(:,:,dat.y(k,:)==1);
+  for j=1:size(Y,3)
+      C_c(:,:,k)=C_c(:,:,k)+covFcn(Y(:,:,j), covPar{:});
+  end
+  C_c(:,:,k)=C_c(:,:,k)/size(Y,3);
 end
 
 %Calculate non-stationarity matrix

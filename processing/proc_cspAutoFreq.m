@@ -103,7 +103,7 @@ dat_lap=proc_selectIval(dat_lap,ival);
 %%
 bands=[];
 for iFreq=1:size(freqs,1)
-band= select_bandnarrow_epo(dat_lap, 'band',freqs(iFreq,:),...
+band= select_bandnarrow(dat_lap, 'band',freqs(iFreq,:),...
     'bandTopscore',freqs(iFreq,:),'areas',{});
 if band(1)==band(2)
     band=freqs(iFreq,:);

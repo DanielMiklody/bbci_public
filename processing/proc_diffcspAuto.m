@@ -1,4 +1,4 @@
-function [dat, varargout]= proc_sCSPAuto_orig(dat, varargin)
+function [dat, varargout]= proc_diffcspAuto(dat, varargin)
 %PROC_CSPAUTO - Common Spatial Pattern Analysis with Auto Filter Selection
 %
 %Synopsis:
@@ -45,18 +45,14 @@ function [dat, varargout]= proc_sCSPAuto_orig(dat, varargin)
 %See also demos/demo_validate_csp
 
 % Author(s): Benjamin Blankertz
-props= { 'CovFcn'      {@cov}                            '!FUNC|CELL'
-         'patterns'     3           'INT|CHAR'
-         'score'        'eigenvalues' '!CHAR(eigenvalues medianvar auc)'
+props= { 'patterns'     3           'INT|CHAR'
+         'score'        'medianvar' '!CHAR(eigenvalues medianvar auc)'
          'covPolicy'    'average'   'CHAR|DOUBLE[- - 2]'
          'scaling'      'none'      'CHAR'
          'normalize'    0           'BOOL'
-         'selectPolicy' 'equalperclass'  'CHAR'
+         'selectPolicy' 'directorscut'  'CHAR'
          'weight'       []        'DOUBLE'
-         'weightExp'    1           'BOOL'
-         'alpha'      1                              'DOUBLE'
-         'chunksize'      10                              'DOUBLE'
-         };
+         'weightExp'    1           'BOOL'};
 
 if nargin==0,
   dat = props; return
@@ -80,44 +76,18 @@ if size(dat.y,1)~=2,
   error('this function works only for 2-class data.');
 end
 
-
-%% Calculate classwise covariance matrices
-[covFcn, covPar]= misc_getFuncParam(opt.CovFcn);
-nChans= size(dat.x, 2);
-nEpo=size(dat.x,3);
-C_c= zeros(nChans, nChans, 2);
-for k= 1:2,
-  X= permute(dat.x(:,:,dat.y(k,:)==1), [1 3 2]);
-  X= reshape(X, [], nChans);
-  C_c(:,:,k)= covFcn(X, covPar{:});
-  C_c(:,:,k)= C_c(:,:,k)/trace(C_c(:,:,k));
+%% calculate classwise covariance matrices
+if isnumeric(opt.covPolicy),
+  R= opt.covPolicy;
+  if ~isequal(size(R), [nChans nChans 2]),
+    error('precalculated covariance matrices have wrong size');
+  end
+else
+  R= procutil_covClasswise(dat, opt);
 end
 
-%% do actual sCSP calculation as generalized eigenvalues
-C_k=zeros(nChans,nChans,2);
-for k=1:2
-    X=dat.x(:,:,dat.y(k,:)==1);
-    X=X(:,:,1:size(X,3)-mod(size(X,3),opt.chunksize));
-    X=reshape(X,size(X,1),size(X,2),opt.chunksize,size(X,3)/opt.chunksize);
-    X=permute(X,[1 3 2 4]);
-    X=reshape(X,[],size(X,3),size(X,4));
-    C_l=zeros(nChans,nChans,size(X,3));
-    for l= 1:size(X,3),
-        C_temp=covFcn(X(:,:,l), covPar{:})-C_c(:,:,k);
-        [V,D_k]=eig(C_temp);
-        %C_l(:,:,l)=abs(C_temp*sign(D_k));
-        C_l(:,:,l)=V*abs(D_k)*V';
-    end
-    C_k(:,:,k)=mean(C_l,3);
-    C_c(:,:,k)=C_c(:,:,k)/trace(C_c(:,:,k));
-end
-C_k(:,:,1)=C_k(:,:,1)/trace(C_k(:,:,1));%klassenweise normalisieren
-C_k(:,:,2)=C_k(:,:,2)/trace(C_k(:,:,2));%klassenweise normalisieren
-C_k=sum(C_k,3);
-%C_k=C_k/trace(C_k);
-% ORIGINAL CODE FOR COMPUTING CSSDP IN CHANNEL SPACE
-% % Do actual CSSDP computation as generalized eigenvalue decomposition
-[W, D]= eig( C_c(:,:,1)-C_c(:,:,2), C_c(:,:,1)+C_c(:,:,2)+opt.alpha*(C_k) );
+%% do actual CSP calculation as generalized eigenvalues
+[W,D]= eig(R(:,:,1)-R(:,:,2),R(:,:,1)+R(:,:,2));
 
 %% calculate score for each CSP channel
 switch(lower(opt.score)),
@@ -146,11 +116,11 @@ end
 score= score(:);
 
 %% select patterns
-if ischar(opt.patterns) & strcmpi(opt.patterns, 'all'),
+if ischar(opt.patterns) && strcmpi(opt.patterns, 'all'),
   fi= 1:nChans;
-elseif ischar(opt.patterns) & strcmpi(opt.patterns, 'auto'),
+elseif ischar(opt.patterns) && strcmpi(opt.patterns, 'auto'),
   if ~strcmpi(opt.selectPolicy, 'maxvalues'),
-    score= max(score, 1-score);
+    score= abs(score);
   end
   perc= stat_percentiles(score, [20 80]);
   thresh= perc(2) + diff(perc);
@@ -169,10 +139,10 @@ else
     [dd,di]= sort(score);
     fi= di(end:-1:nChans-opt.patterns+1);
    case 'bestvalues',
-    [dd,di]= sort(min(score, 1-score));
+    [dd,di]= sort(abs(score),'descend');
     fi= di(1:opt.patterns);
    case 'maxvalues',
-    [dd,di]= sort(-score);
+    [dd,di]= sort(score,'descend');
     fi= di(1:opt.patterns);
    case 'maxvalueswithcut',
     score= score/max(score);
@@ -183,8 +153,12 @@ else
     fi= di(idx);
    case 'directorscut',
     if ismember(opt.score, {'eigenvalues','medianvar'},'legacy'),
-      absscore= 2*(max(score, 1-score)-0.5);
-      [dd,di]= sort(score);
+        if strcmp(opt.score,'medianvar')
+            absscore= 2*(max(score, 1-score)-0.5);
+        else
+            absscore= abs(score);
+        end
+      [dd,di]= sort(score,'descend');
       Nh= floor(nChans/2);
       iC1= find(ismember(di, 1:Nh,'legacy'));
       iC2= flipud(find(ismember(di, [nChans-Nh+1:nChans],'legacy')));
@@ -246,7 +220,7 @@ if isfield(dat, 'clab')  && ~isfield(dat, 'origClab'),
 end
 
 %% apply CSP filters to time series
-dat= proc_linearDerivation(dat, Wp, 'prependix','sCSP');
+dat= proc_linearDerivation(dat, Wp, 'prependix','csp');
 
 %% arrange optional output arguments
 if nargout>1,
