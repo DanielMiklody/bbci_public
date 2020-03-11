@@ -37,7 +37,7 @@ if isempty(opt.Linespec),
 end
 
 old_ax= gca;
-hsp= gridutil_getSubplots(opt.clab);
+hsp= gridutil_getSubplots(opt.Clab);
 for ii= 1:length(hsp),
   ih= hsp(ii);
   axes(ih);
@@ -53,4 +53,4 @@ end
 if opt.MoveToBackground,
   obj_moveBack(struct2array(H));
 end
-Axes(old_ax);
+axes(old_ax);
