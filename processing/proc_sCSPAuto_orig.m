@@ -47,11 +47,11 @@ function [dat, varargout]= proc_sCSPAuto_orig(dat, varargin)
 % Author(s): Benjamin Blankertz
 props= { 'CovFcn'      {@cov}                            '!FUNC|CELL'
          'patterns'     3           'INT|CHAR'
-         'score'        'medianvar' '!CHAR(eigenvalues medianvar auc)'
+         'score'        'eigenvalues' '!CHAR(eigenvalues medianvar auc)'
          'covPolicy'    'average'   'CHAR|DOUBLE[- - 2]'
          'scaling'      'none'      'CHAR'
          'normalize'    0           'BOOL'
-         'selectPolicy' 'directorscut'  'CHAR'
+         'selectPolicy' 'equalperclass'  'CHAR'
          'weight'       []        'DOUBLE'
          'weightExp'    1           'BOOL'
          'alpha'      1                              'DOUBLE'
@@ -111,8 +111,10 @@ for k=1:2
     C_k(:,:,k)=mean(C_l,3);
     C_c(:,:,k)=C_c(:,:,k)/trace(C_c(:,:,k));
 end
+C_k(:,:,1)=C_k(:,:,1)/trace(C_k(:,:,1));%klassenweise normalisieren
+C_k(:,:,2)=C_k(:,:,2)/trace(C_k(:,:,2));%klassenweise normalisieren
 C_k=sum(C_k,3);
-C_k=C_k/trace(C_k);
+%C_k=C_k/trace(C_k);
 % ORIGINAL CODE FOR COMPUTING CSSDP IN CHANNEL SPACE
 % % Do actual CSSDP computation as generalized eigenvalue decomposition
 [W, D]= eig( C_c(:,:,1)-C_c(:,:,2), C_c(:,:,1)+C_c(:,:,2)+opt.alpha*(C_k) );

@@ -52,7 +52,8 @@ props= { 'patterns'     3           'INT|CHAR'
          'normalize'    0           'BOOL'
          'selectPolicy' 'directorscut'  'CHAR'
          'weight'       []        'DOUBLE'
-         'weightExp'    1           'BOOL'};
+         'weightExp'    1           'BOOL'
+         'shrinkage'    0           'BOOL'};
 
 if nargin==0,
   dat = props; return

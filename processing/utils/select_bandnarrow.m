@@ -122,6 +122,11 @@ if ~isfield(dat,'y')
     end
     dat= proc_segmentation(dat, mrk, spec_ival, 'CLab', cat(2, opt.areas{:}));
 else
+    if diff(dat.t([1, end]))>=1000,
+        winlen= dat.fs;
+    else
+        winlen= dat.fs/2;
+    end
     dat= proc_selectChannels(dat, cat(2, opt.areas{:}));
 end
 spec= proc_spectrum(dat, opt.band, 'Win',kaiser(winlen,2));

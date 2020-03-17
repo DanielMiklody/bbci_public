@@ -96,5 +96,5 @@ dat.x = X_ssd;
 dat.origClab= dat.clab;
 dat.clab=cell(1,size(dat.x,2));
 for k=1:size(dat.x,2)
-    dat.clab{k} = sprintf('ssd %d',k);
+    dat.clab{k} = sprintf('ssd_%d',k);
 end
