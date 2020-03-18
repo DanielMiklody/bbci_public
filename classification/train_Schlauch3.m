@@ -1,4 +1,4 @@
-function C = train_Schlauch3m(xTr, yTr, varargin)
+function C = train_Schlauch3(xTr, yTr, varargin)
 % TRAIN_RLDASHRINK - Regularized LDA with automatic shrinkage selection
 %
 %Synopsis:
@@ -64,8 +64,7 @@ props= {'Gamma'      'auto'  'CHAR(auto)|!DOUBLE'
 
 
 if size(yTr,1)==1, yTr= [yTr<0; yTr>0]; end
-nClasses= size(yTr,1);
-nChannels=size(xTr,2);
+
 
 props_shrinkage= clsutil_shrinkage;
 
@@ -75,24 +74,17 @@ if nargin==0,
   return
 end
 
-opt= opt_proplistToStruct(varargin{3:end});
+opt= opt_proplistToStruct(varargin{2:end});
 [opt, isdefault]= opt_setDefaults(opt, props);
 opt_checkProplist(opt, props, props_shrinkage);
 
 if nargin<3||~isnumeric(varargin{1})
-    error('Schlauch3 needs yo Eigenvalues')
+    [C.k,Dest]=clsuitl_estimate_DF(xTr,yTr);
+    C.D=Dest;    
+else    
+    C.D=varargin{1};
+    C.k=clsuitl_estimate_DF(xTr,yTr,C.D);
 end
-
-vars=zeros(1,nChannels,nClasses);
-for ii=1:nClasses
-    vars(:,:,ii)=var(xTr(:,:,yTr(ii,:)==1),[],3);
-end
-
-C.D=varargin{1};
-kest=[2*(1-C.D)./vars(:,:,1)',(2*C.D./vars(:,:,2)')];
-kest(C.D>0.5,1)=kest(C.D>0.5,2);
-kest=kest(:,1);
-C.k=kest;
 
 C.w=C.k./2.*(1./(1-C.D)-1./C.D);
 C.b=(C.k'/2-1)*log(1./C.D-1);
