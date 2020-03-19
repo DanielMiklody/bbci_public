@@ -15,7 +15,7 @@ switch nargin
         if isstruct(xTr)
             D=yTr;
             yTr=xTr.y;
-            xTr=xTr.x;
+            xTr=squeeze(xTr.x);
         else
             D=mean(xTr(:,yTr(2,:)==1),2);
         end
