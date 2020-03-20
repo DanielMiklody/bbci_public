@@ -59,7 +59,8 @@ function C = train_Schlauch3(xTr, yTr, varargin)
 % opt-type checking (Michael Tangermann)
 % 08-2019 Daniel Miklody
 
-props= {'shrinkage'      0  'BOOL'
+props= {'shrinkage'         0               'BOOL'
+        'lambda'           0.05             'DOUBLE'
        };
 
 
@@ -69,7 +70,6 @@ if size(yTr,1)==1, yTr= [yTr<0; yTr>0]; end
 props_shrinkage= clsutil_shrinkage;
 
 if nargin==0,
-  %C= opt_catProps(props, props_shrinkage); 
   C= opt_catProps(props,props_shrinkage); 
   return
 end
@@ -88,6 +88,6 @@ end
 
 C.w=C.k./2.*(1./(1-C.D)-1./C.D);
 C.b=(C.k'/2-1)*log(1./C.D-1);
-
+C.lambda=opt.lambda;
 
 

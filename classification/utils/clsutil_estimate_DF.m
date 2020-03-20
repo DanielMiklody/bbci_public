@@ -1,6 +1,11 @@
-function [ kest, Dest ] = clsutil_estimate_DF( xTr,yTr,D )
+function [ kest, Dest ] = clsutil_estimate_DF( xTr,yTr,D, varargin )
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
+if nargin>3
+    shrinkage=varargin{1};
+else
+    shrinkage=0;
+end
 
 switch nargin
     case 1
@@ -21,11 +26,18 @@ switch nargin
         end
 end
 
+
 nClasses= size(yTr,1);
 nChannels=size(xTr,1);
 vars=zeros(nChannels,nClasses);
-for ii=1:nClasses
-    vars(:,ii)=var(xTr(:,yTr(ii,:)==1),[],2);
+if ~shrinkage
+    for ii=1:nClasses
+        vars(:,ii)=var(xTr(:,yTr(ii,:)==1),[],2);
+    end
+else
+    for ii=1:nClasses
+        vars(:,ii)=diag(clsutil_shrinkage(xTr(:,yTr(ii,:)==1)));
+    end
 end
 
 kest=[2*(1-D)./vars(:,1),(2*D./vars(:,2))];
