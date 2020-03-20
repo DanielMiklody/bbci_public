@@ -1,4 +1,4 @@
-function [ kest, Dest ] = clsutil_estimate_DF( xTr,yTr,D, varargin )
+function [ kest, Dest, kfull ] = clsutil_estimate_DF( xTr,yTr,D, varargin )
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
 if nargin>3
@@ -20,7 +20,7 @@ switch nargin
         if isstruct(xTr)
             D=yTr;
             yTr=xTr.y;
-            xTr=xTr.x;
+            xTr=squeeze(xTr.x);
         else
             D=mean(xTr(:,yTr(2,:)==1),2);
         end
@@ -40,7 +40,8 @@ else
     end
 end
 
-kest=[2*(1-D)./vars(:,1),(2*D./vars(:,2))];
+kfull=[2*(1-D)./vars(:,1),(2*D./vars(:,2))];
+kest=kfull;
 kest(D>0.5,1)=kest(D>0.5,2);
 kest=kest(:,1);
 Dest=D;
