@@ -1,4 +1,4 @@
-function [ kest, Dest ] = clsutil_estimate_DF( xTr,yTr,D )
+function [ kest, Dest, kfull ] = clsutil_estimate_DF( xTr,yTr,D )
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -28,7 +28,8 @@ for ii=1:nClasses
     vars(:,ii)=var(xTr(:,yTr(ii,:)==1),[],2);
 end
 
-kest=[2*(1-D)./vars(:,1),(2*D./vars(:,2))];
+kfull=[2*(1-D)./vars(:,1),(2*D./vars(:,2))];
+kest=kfull;
 kest(D>0.5,1)=kest(D>0.5,2);
 kest=kest(:,1);
 Dest=D;
