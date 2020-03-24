@@ -85,10 +85,14 @@ else
     C.D=varargin{1};
     [C.k,~,kfull]=clsutil_estimate_DF(xTr,yTr,C.D,opt.shrinkage);
 end
+
 % C.k=mean(kfull,2);
 C.w=C.k./2.*(1./(1-C.D)-1./C.D);
 C.b=(C.k'/2-1)*log(1./C.D-1);
 C.w(C.k<=2)=0;
 C.b=(C.k(C.k>2)'/2-1)*log(1./C.D(C.k>2)-1);
+
+% C.w=1./2.*(kfull(:,1)./(1-C.D)-kfull(:,2)./C.D);
+% C.b=(kfull(:,1)'/2-1)*(log(1-C.D)-log(kfull(:,1)))-(kfull(:,2)'/2-1)*(log(C.D)-log(kfull(:,2)));
 
 
