@@ -79,15 +79,16 @@ opt= opt_proplistToStruct(varargin{2:end});
 opt_checkProplist(opt, props, props_shrinkage);
 
 if nargin<3||~isnumeric(varargin{1})
-    [C.k,Dest]=clsutil_estimate_DF(xTr,yTr);
+    [C.k,Dest,kfull]=clsutil_estimate_DF(xTr,yTr);
     C.D=Dest;    
 else    
     C.D=varargin{1};
-    C.k=clsutil_estimate_DF(xTr,yTr,C.D,opt.shrinkage);
+    [C.k,~,kfull]=clsutil_estimate_DF(xTr,yTr,C.D,opt.shrinkage);
 end
-
+% C.k=mean(kfull,2);
 C.w=C.k./2.*(1./(1-C.D)-1./C.D);
 C.b=(C.k'/2-1)*log(1./C.D-1);
-
+C.w(C.k<=2)=0;
+C.b=(C.k(C.k>2)'/2-1)*log(1./C.D(C.k>2)-1);
 
 
