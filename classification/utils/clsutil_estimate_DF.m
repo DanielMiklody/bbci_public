@@ -40,7 +40,7 @@ else
     end
 end
 
-kfull=[2*(1-D)./vars(:,1),(2*D./vars(:,2))];
+kfull=[2*(1-D).^2./vars(:,1),(2*D.^2./vars(:,2))];
 kest=kfull;
 kest(D>0.5,1)=kest(D>0.5,2);
 kest=kest(:,1);
