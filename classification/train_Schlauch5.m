@@ -1,4 +1,4 @@
-function C = train_Schlauch3(xTr, yTr, varargin)
+function C = train_Schlauch4(xTr, yTr, varargin)
 % TRAIN_RLDASHRINK - Regularized LDA with automatic shrinkage selection
 %
 %Synopsis:
@@ -60,6 +60,7 @@ function C = train_Schlauch3(xTr, yTr, varargin)
 % 08-2019 Daniel Miklody
 
 props= {'shrinkage'      0  'BOOL'
+        'reject'         0  'BOOL'
        };
 
 
@@ -79,19 +80,33 @@ opt= opt_proplistToStruct(varargin{2:end});
 opt_checkProplist(opt, props, props_shrinkage);
 
 if nargin<3||~isnumeric(varargin{1})
-    [C.k,Dest,kfull]=clsutil_estimate_DF(xTr,yTr);
-    C.D=Dest;    
+    [~,C.D,C.k]=clsutil_estimate_DF(xTr,yTr);
 else    
     C.D=varargin{1};
-    [C.k,~,kfull]=clsutil_estimate_DF(xTr,yTr,C.D,opt.shrinkage);
+    [~,~,C.k]=clsutil_estimate_DF(xTr,yTr,C.D,opt.shrinkage);
 end
-C.k=mean(kfull,2);
-C.k=min(kfull,[],2);
-C.k=max(kfull,[],2);
-C.w=C.k./2.*(1./(1-C.D)-1./C.D);
-C.b=(C.k'/2-1)*log(1./C.D-1);
-% C.w(C.k<=2)=0;
-% C.b=(C.k(C.k>2)'/2-1)*log(1./C.D(C.k>2)-1);
-% C.w=1./2.*(kfull(:,1)./(1-C.D)-kfull(:,2)./C.D);
-% C.b=(kfull(:,1)'/2-1)*(log(1-C.D)-log(kfull(:,1)))-(kfull(:,2)'/2-1)*(log(C.D)-log(kfull(:,2)));
+%bringin it to x_n=f(x1:xn-1)
+C.w=zeros(size(C.D));
+if opt.reject
+    artis=C.k(:,1)<=2|C.k(:,2)<=2;
+else
+    artis=false(size(C.D));
+end
+C.k(artis,:)=[];
+C.D(artis)=[];
+b=(C.k(:,2)-C.k(:,1))/2;
+c=0.5.*(C.k(:,1)./(1-C.D)-C.k(:,2)./C.D);
+A=sum(-(C.k(:,2)-C.k(:,1))*(log(2))/2+gammaln(C.k(:,1)/2)-...
+    gammaln(C.k(:,2)/2)+(C.k(:,2)/2).*log(C.k(:,2)./C.D)-...
+    (C.k(:,1)/2).*log(C.k(:,1)./(1-C.D)));
+
+x=0.5*ones(numel(C.D)-1,1);
+z=c(1)/b(1)*exp(-(b(2:end)'*log(x)+c(2:end)'*x +A)/b(1));
+k=-(z<0);
+x=[b(1)/c(1)*Lambert_W(z,k);x ];
+% dxn_dxi=-1/b(end)*(b(1:end-1)./x+c(1:end-1)).*exp(z)./z./exp(Lambert_W(z,k));
+% C.w=[dxn_dxi; -1];
+
+C.w(~artis)=b./x+c;
+C.b=-(b./x+c)'*x+b'*log(x)+c'*x+A;
 

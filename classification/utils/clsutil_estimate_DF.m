@@ -1,13 +1,16 @@
-function [ kest, Dest, kfull ] = clsutil_estimate_DF( xTr,yTr,D, varargin )
+function [ kest, Dest, kfull ] = clsutil_estimate_DF( xTr,yTr, varargin )
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
-if nargin>3
-    shrinkage=varargin{1};
+if nargin>3||nargin>2&&isstruct(xTr.x)
+    shrinkage=varargin{end};
+    realnargin=nargin-2;
+    D=yTr;
 else
     shrinkage=0;
+    realnargin=nargin;
 end
 
-switch nargin
+switch realnargin
     case 1
         if isstruct(xTr)
             yTr=xTr.y;
