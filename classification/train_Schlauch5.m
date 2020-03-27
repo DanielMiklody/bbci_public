@@ -1,4 +1,4 @@
-function C = train_Schlauch4(xTr, yTr, varargin)
+function C = train_Schlauch5(xTr, yTr, varargin)
 % TRAIN_RLDASHRINK - Regularized LDA with automatic shrinkage selection
 %
 %Synopsis:
@@ -94,19 +94,36 @@ else
 end
 C.k(artis,:)=[];
 C.D(artis)=[];
-b=(C.k(:,2)-C.k(:,1))/2;
-c=0.5.*(C.k(:,1)./(1-C.D)-C.k(:,2)./C.D);
-A=sum(-(C.k(:,2)-C.k(:,1))*(log(2))/2+gammaln(C.k(:,1)/2)-...
-    gammaln(C.k(:,2)/2)+(C.k(:,2)/2).*log(C.k(:,2)./C.D)-...
-    (C.k(:,1)/2).*log(C.k(:,1)./(1-C.D)));
+%calculate coefficients for a*x.^b*exp(cx)
+b1=C.k(:,2)/2;
+b2=C.k(:,1)/2;
+b=b1-b2;
+c1=-0.5.*(C.k(:,2)./C.D);
+c2=-0.5.*C.k(:,1)./(1-C.D);
+c=c1-c2;
+A1=-C.k(:,2)*(log(2))/2-gammaln(C.k(:,2)/2)+...
+    (C.k(:,2)/2).*log(C.k(:,2)./C.D);
+A2=-C.k(:,1)*(log(2))/2-gammaln(C.k(:,1)/2)+...
+    (C.k(:,1)/2).*log(C.k(:,1)./(1-C.D));
+A=sum(A1-A2);
 
-x=0.5*ones(numel(C.D)-1,1);
+%have a starting value on the hyperfunction
+x=0.4*ones(numel(C.D)-1,1);
 z=c(1)/b(1)*exp(-(b(2:end)'*log(x)+c(2:end)'*x +A)/b(1));
 k=-(z<0);
 x=[b(1)/c(1)*Lambert_W(z,k);x ];
-% dxn_dxi=-1/b(end)*(b(1:end-1)./x+c(1:end-1)).*exp(z)./z./exp(Lambert_W(z,k));
-% C.w=[dxn_dxi; -1];
 
+%find hotspot
+% funci=@(x)abs((b./x+c)'*(b./x.^2));
+% funci=@(x)abs(2*sum(b./x+c)-(b./x+c)'*(b./x.^2));
+funci=@(x)-norm((b1./x+c1.*x.^b1).*...
+    exp(SeparatingHyperFunction(x,sum(A1),b1,c1))-...
+    (b2./x+c2.*x.^b2).*...
+    exp(SeparatingHyperFunction(x,sum(A2),b2,c2)));
+ceq=@(x)deal([],SeparatingHyperFunction(x,A,b,c));
+x=fmincon(funci,x,[],[],[],[],[],[],ceq, optimoptions(@fmincon,'Display','off'));
+
+%determine classifier
 C.w(~artis)=b./x+c;
 C.b=-(b./x+c)'*x+b'*log(x)+c'*x+A;
 
