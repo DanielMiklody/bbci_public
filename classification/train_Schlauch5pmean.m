@@ -109,7 +109,7 @@ A2=-C.k(:,1)*(log(2))/2-gammaln(C.k(:,1)/2)+...
 A=sum(A1-A2);
 
 %have a starting value on the hyperfunction
-x=0.4*ones(numel(C.D)-1,1);
+x=0.3*ones(numel(C.D)-1,1);
 z=c(1)/b(1)*exp(-(b(2:end)'*log(x)+c(2:end)'*x +A)/b(1));
 k=-(z<0);
 x=[b(1)/c(1)*Lambert_W(z,k);x ];
