@@ -59,7 +59,8 @@ function C = train_Chi(xTr, yTr, varargin)
 % opt-type checking (Michael Tangermann)
 % 08-2019 Daniel Miklody
 
-props= {'shrinkage'      0  'BOOL'
+props= {'shrinkage'      0      'BOOL'
+        'lambda'          0.05   'DOUBLE'
        };
 
 
