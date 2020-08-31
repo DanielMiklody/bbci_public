@@ -24,19 +24,25 @@ A2=-C.k(:,1)*(log(2))/2-gammaln(C.k(:,1)/2)+...
     (C.k(:,1)/2).*log(C.k(:,1)./(1-C.D));
 A=sum(A1-A2);
 
-if opt.lambda=0
+if C.lambda==0
     out=b'*log(x)+c'*x+A;
 else
     out = nan(1,size(x,2));
-    mu_x=mean(C.D);
-    g_trainmean(C.k)/mean(C.D);
-    g=1;
+    mu_x=0.5;
+    var_train=2*[1-C.D C.D].^2./C.k;
+    var_train(:,2)=var_train(:,2)+(C.D-0.5).^2;
+    var_train(:,1)=var_train(:,1)+(-C.D+0.5).^2;
+    var_train=mean(var_train,2);
+    %g_train=1./var_train;
+    %g=1;
+    vari=var_train;
     for xi=1:size(x,2)
-        mu_x=(1-C.lambda)*mu_x+C.lambda*xi;
-        g=(1-C.lambda)*g+C.lambda*2/(xi-mu_x).^2/g_train;        
-        out(xi)=b'*log(x/g)+c'*x/g+A;
-    end
-    
+        mu_x=(1-C.lambda)*mu_x+C.lambda*x(:,xi);
+        %g=(1-C.lambda)*g+C.lambda*1./(x(:,xi)-mu_x).^2.*149/150./g_train;
+        vari=(1-C.lambda)*vari+C.lambda*(x(:,xi)-mu_x).^2;
+        g=vari./var_train;
+        out(xi)=sum(b'*log(x(:,xi)./g)+c'*x(:,xi)./g+A);
+    end    
 end
 end
 

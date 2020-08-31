@@ -18,8 +18,11 @@ out = nan(1,size(x,2));
 for xi=1:size(x,2)
     C.b=(1-C.lambda)*C.b-C.lambda*C.w'*x(:,xi);
     out1=C.w'*x(:,xi) +C.b;
-    out(xi)=geomean(abs(C.w(C.w~=0)*(out1)/norm(C.w(C.w~=0)).^2),1).*sign(out1);
-    %out(xi)=out1;
+    out(xi)=out1;
+    
+    %out1=C.w.*x(:,xi) +C.b;
+    %out(xi)=geomean(abs(C.w'*(out1)./norm(C.w(C.w~=0)).^2),1)*sign(out1);
+    %out(xi)=geomean(abs(C.w'*(log(x(:,xi)))./norm(C.w(C.w~=0)).^2),1)*sign(out1);
 end
 
 end

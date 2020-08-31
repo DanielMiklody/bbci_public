@@ -48,6 +48,7 @@ props= {'CovFcn'      {@cov}                            '!FUNC|CELL'
         'filterOrder'   3                               'INT'
         'ival'  []                               'DOUBLE[- -2]'
         'chunksize'   5                             'DOUBLE'
+        'alpha'      1                              'DOUBLE'
        };
 
 if nargin==0,
@@ -66,6 +67,8 @@ dat= misc_history(dat);
 % Calculate classwise covariance matrices
 [covFcn, covPar]= misc_getFuncParam(opt.CovFcn);
 
+epo_noise=proc_selectChannels(dat,'*noise*');
+dat=proc_selectChannels(dat,'not','*noise*');
 nChans= size(dat.x, 2);
 nEpo=size(dat.x,3);
 C_c= zeros(nChans, nChans, 2);
@@ -75,11 +78,13 @@ for k= 1:2,
   C_c(:,:,k)= covFcn(X, covPar{:});
 end
 
-
+X= permute(epo_noise.x, [1 3 2]);
+X= reshape(X, [], nChans);
+C_n= covFcn(X, covPar{:});
 
 % ORIGINAL CODE FOR COMPUTING CSSDP IN CHANNEL SPACE
 % % Do actual CSSDP computation as generalized eigenvalue decomposition
-[W, D]= eig( C_c(:,:,1), C_c(:,:,1)+C_c(:,:,2));
+[W, D]= eig( C_c(:,:,1)-C_c(:,:,2), C_c(:,:,1)/2+C_c(:,:,2)/2+opt.alpha*C_n);
 
 % Calculate score for each CSP channel
 [scoreFcn, scorePar]= misc_getFuncParam(opt.ScoreFcn);
@@ -110,6 +115,7 @@ dat= proc_linearDerivation(dat, W, 'prependix','scssp');
 
 % Determine patterns according to [Haufe et al, Neuroimage, 87:96-110, 2014]
 % http://dx.doi.org/10.1016/j.neuroimage.2013.10.067
+Ctr=mean(C_c,3);
 A= Ctr * W / (W'*Ctr*W);
 
 varargout= {W, A, score, Ctr};

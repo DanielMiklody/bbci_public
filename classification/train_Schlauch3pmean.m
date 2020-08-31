@@ -86,10 +86,11 @@ else
     [C.k,~,kfull]=clsutil_estimate_DF(xTr,yTr,C.D,opt.shrinkage);
 end
 %C.k=mean(kfull,2);
+%C.k=C.k./2;
 C.w=C.k./2.*(1./(1-C.D)-1./C.D);
 C.b=(C.k'/2-1)*log(1./C.D-1);
-C.w(C.k<=2)=0;
-C.b=(C.k(C.k>2)'/2-1)*log(1./C.D(C.k>2)-1);
+%C.w(C.k<=2)=0;
+%C.b=(C.k(C.k>2)'/2-1)*log(1./C.D(C.k>2)-1);
 C.lambda=opt.lambda;
 
 

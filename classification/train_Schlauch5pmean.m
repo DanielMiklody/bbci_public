@@ -113,7 +113,14 @@ x=0.3*ones(numel(C.D)-1,1);
 z=c(1)/b(1)*exp(-(b(2:end)'*log(x)+c(2:end)'*x +A)/b(1));
 k=-(z<0);
 x=[b(1)/c(1)*Lambert_W(z,k);x ];
-
+if any(isnan(x))
+    while any(isnan(x))
+        x=rand(numel(C.D)-1,1);
+        z=c(1)/b(1)*exp(-(b(2:end)'*log(x)+c(2:end)'*x +A)/b(1));
+        k=-(z<0);
+        x=[b(1)/c(1)*Lambert_W(z,k);x ];
+    end
+end
 %find hotspot
 % funci=@(x)abs((b./x+c)'*(b./x.^2));
 % funci=@(x)abs(2*sum(b./x+c)-(b./x+c)'*(b./x.^2));

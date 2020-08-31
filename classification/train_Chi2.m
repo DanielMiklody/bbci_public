@@ -1,4 +1,4 @@
-function C = train_Chi(xTr, yTr, varargin)
+function C = train_Chi2lin(xTr, yTr, varargin)
 % TRAIN_RLDASHRINK - Regularized LDA with automatic shrinkage selection
 %
 %Synopsis:
@@ -74,8 +74,13 @@ if nargin==0,
   C= opt_catProps(props,props_shrinkage); 
   return
 end
-
-opt= opt_proplistToStruct(varargin{2:end});
+if nargin>3
+    if isnumeric(varargin{1})
+        opt= opt_proplistToStruct(varargin{2:end});
+    else
+        opt= opt_proplistToStruct(varargin{:});
+    end
+end
 [opt, isdefault]= opt_setDefaults(opt, props);
 opt_checkProplist(opt, props, props_shrinkage);
 
@@ -85,5 +90,6 @@ else
     C.D=varargin{1};
     [~,~,C.k]=clsutil_estimate_DF(xTr,yTr,C.D,opt.shrinkage);
 end
+C.lambda=opt.lambda;
 
   
