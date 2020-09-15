@@ -31,7 +31,7 @@ A=sum(A1-A2);
 
 if C.lambda==0
     %out=b'*log(x)+c'*x+A;
-    %out=b1'*log(X1)-b2'*log(X2)+c1'*X1-c2'*X2+A;
+    out=b1'*log(X1)-b2'*log(X2)+c1'*X1-c2'*X2+A;
 else
     out = nan(1,size(x,2));
     mu_x=0.5;
